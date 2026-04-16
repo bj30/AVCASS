@@ -140,12 +140,6 @@ MODEL_NAME=AV-CASS \
 ./bin/evaluate.sh
 ```
 
-## Notes
-
-- The supported public interface is the `bin/` scripts in `av_cass/` and the manifest tools in `av_dnr/bin/`.
-- Some legacy research modules remain because the released entrypoints still import them.
-- Public wrappers avoid hard-coded internal dataset and checkpoint paths. Configure paths through environment variables instead.
-
 ## BibTex
 ```
 @misc{zhang2026cinematicaudiosourceseparation,
