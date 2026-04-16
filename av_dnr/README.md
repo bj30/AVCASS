@@ -1,6 +1,6 @@
 # AV-DnR
 
-This package contains the public-facing AVDnR generation workflow.
+This package contains the AVDnR generation workflow.
 
 Supported public entrypoints:
 

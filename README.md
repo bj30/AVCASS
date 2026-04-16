@@ -140,21 +140,13 @@ MODEL_NAME=AV-CASS \
 ./bin/evaluate.sh
 ```
 
-## Notes
-
-- The supported public interface is the `bin/` scripts in `av_cass/` and the manifest tools in `av_dnr/bin/`.
-- Some legacy research modules remain because the released entrypoints still import them.
-- Public wrappers avoid hard-coded internal dataset and checkpoint paths. Configure paths through environment variables instead.
 
 ## BibTex
 ```
-@misc{zhang2026cinematicaudiosourceseparation,
-      title={Cinematic Audio Source Separation Using Visual Cues}, 
-      author={Kang Zhang and Suyeon Lee and Arda Senocak and Joon Son Chung},
-      year={2026},
-      eprint={2603.26113},
-      archivePrefix={arXiv},
-      primaryClass={cs.MM},
-      url={https://arxiv.org/abs/2603.26113}, 
+@inproceedings{zhang2026cinematicaudiosourceseparation,
+  title={Cinematic Audio Source Separation Using Visual Cues},
+  author={Zhang, Kang and Lee, Suyeon and Senocak, Arda and Chung, Joon Son},
+  booktitle={IEEE Conf. Comput. Vis. Pattern Recog.},
+  year={2026}
 }
 ```

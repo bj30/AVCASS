@@ -16,7 +16,7 @@ cd "$SCRIPT_DIR"
 : "${NUM_PROCESSES:=1}"
 : "${MAIN_PROCESS_PORT:=0}"
 accelerate launch --multi_gpu --num_processes "$NUM_PROCESSES" --main_process_port "$MAIN_PROCESS_PORT" --mixed_precision fp16 \
-  train_avdnr_fp16_spec_RFM_av_zero_conv_2vid_aaai_rebuttal.py \
+  train_avdnr_fp16_spec_RFM_av.py \
   --results-dir "$RESULTS_DIR" \
   --audio_files_dir "$DATASET_ROOT" \
   --visual_encoder_type "$VISUAL_ENCODER_TYPE" \

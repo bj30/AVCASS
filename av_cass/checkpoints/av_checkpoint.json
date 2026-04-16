@@ -2,7 +2,7 @@
   "name": "AV-CASS",
   "path": "<set-at-runtime>",
   "model": "UNet2d_S2",
-  "training_script": "train_avdnr_fp16_spec_RFM_av_zero_conv_2vid_aaai_rebuttal.py",
+  "training_script": "train_avdnr_fp16_spec_RFM_av.py",
   "launch_script": "bin/train_av.sh",
   "notes": "Stage-2 audio-visual checkpoint metadata. Refer to the README for the checkpoint links."
 }
