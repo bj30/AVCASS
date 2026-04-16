@@ -1,0 +1,8 @@
+{
+  "name": "Ours-AO",
+  "path": "<set-at-runtime>",
+  "model": "UNet2d_S2",
+  "training_script": "train_avdnr_fp16_spec_RFM.py",
+  "launch_script": "bin/train_ao.sh",
+  "notes": "Stage-1 audio-only checkpoint metadata. Refer to the README for the checkpoint links."
+}

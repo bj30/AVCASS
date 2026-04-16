@@ -1,0 +1,36 @@
+{
+  "sources": {
+    "speech": {
+      "dataset": "lrs3",
+      "roots": [
+        "/path/to/lrs3/pretrain",
+        "/path/to/lrs3/trainval",
+        "/path/to/lrs3/test"
+      ],
+      "glob": "**/*.wav"
+    },
+    "music": {
+      "dataset": "fma",
+      "roots": [
+        "/path/to/fma_filtered/train",
+        "/path/to/fma_filtered/test"
+      ],
+      "glob": "**/*.wav"
+    },
+    "sfx": {
+      "dataset": "vggsound",
+      "roots": [
+        "/path/to/VGGSound_PREPROCESSED_ROOT/audio" ### should add video_json directory as well
+      ],
+      "glob": "**/*.wav"
+    },
+    "background": {
+      "dataset": "fsd50k",
+      "roots": [
+        "/path/to/FSD50K_filtered/train",
+        "/path/to/FSD50K_filtered/test"
+      ],
+      "glob": "**/*.wav"
+    }
+  }
+}

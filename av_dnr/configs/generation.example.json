@@ -1,0 +1,8 @@
+{
+  "split_dir": "/path/to/manifests/release_split",
+  "output_root": "/path/to/output_root",
+  "dataset_name": "AVDnR-corrected",
+  "num_train_samples": 10000,
+  "num_test_samples": 1000,
+  "seed": 20260309
+}

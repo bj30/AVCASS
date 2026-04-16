@@ -1,0 +1,8 @@
+{
+  "dataset_root": "/path/to/AVDnR-corrected",
+  "results_root": "/path/to/results",
+  "ao_checkpoint": "/path/to/ao_checkpoint.pt",
+  "av_checkpoint": "/path/to/av_checkpoint.pt",
+  "cavp_checkpoint": "/path/to/cavp.ckpt",
+  "talknet_checkpoint": "/path/to/talknet.ckpt"
+}

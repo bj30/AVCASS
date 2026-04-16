@@ -1,0 +1,28 @@
+{
+  "sources": {
+    "speech": {
+      "dataset": "lrs3",
+      "roots": [
+        "/mnt/datasets/lip_reading/lrs3/pretrain",
+        "/mnt/datasets/lip_reading/lrs3/trainval",
+        "/mnt/datasets/lip_reading/lrs3/test"
+      ],
+      "glob": "**/*.wav"
+    },
+    "music": {
+      "dataset": "fma",
+      "roots": [
+        "/mnt/bear3/datasets/AV-DnR-backup/fma_medium_filtered/audio_16k/train",
+        "/mnt/bear3/datasets/AV-DnR-backup/fma_medium_filtered/audio_16k/test"
+      ],
+      "glob": "**/*.wav"
+    },
+    "sfx": {
+      "dataset": "vggsound",
+      "roots": [
+        "/mnt/bear3/datasets/AV-DnR-backup/vggsound_filtered/audio"
+      ],
+      "glob": "**/*.wav"
+    }
+  }
+}
