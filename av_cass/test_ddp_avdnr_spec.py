@@ -11,9 +11,6 @@ For a simple single-GPU/CPU sampling script, see sample.py.
 import torch
 import torch.distributed as dist
 from models_avdnr import SiT_models
-from download import find_model
-from transport import create_transport, Sampler
-from diffusers.models import AutoencoderKL
 from train_utils import parse_ode_args, parse_sde_args, parse_transport_args
 from tqdm import tqdm
 import os
@@ -28,8 +25,7 @@ import torch.nn as nn
 
 import torchaudio
 from torch.utils.data import DataLoader
-from data.data_fixedAVDnR import MultiSourceDataset
-from stable_audio_tools import AudioAE
+from data.data_AVDnR import MultiSourceDataset
 from spec_utils import audio2spec, spec2audio
 from transport.RFM import ReFlow
 from torchmetrics.functional.audio import signal_distortion_ratio, signal_noise_ratio, scale_invariant_signal_noise_ratio, scale_invariant_signal_distortion_ratio
@@ -76,8 +72,7 @@ def main(mode, args):
     ckpt_path = args.ckpt or f"SiT-XL-2-{args.image_size}x{args.image_size}.pt"
     state_dict = torch.load(ckpt_path, weights_only=False, map_location="cpu")['ema']
     model.load_state_dict(state_dict)
-    model.eval()  # important!
-    # model = torch.compile(model)
+    model.eval()
     
     
     transport = ReFlow(
@@ -169,6 +164,7 @@ def main(mode, args):
         rank=rank,
         world_size=dist.get_world_size(),
         exclude_list=exclude_list,
+        root_dnrv3_dataset_path=args.root_dnrv3_dataset_path,
     )
 
     loader = DataLoader(
@@ -183,20 +179,10 @@ def main(mode, args):
 
     dist.barrier()
 
-    # import ipdb; ipdb.set_trace()
     pbar = tqdm(loader, desc=f"Sampling", disable=rank != 0)
     for idx, batch in enumerate(pbar):
-        # if idx < 30:
-        #     continue
         waveforms, mixture, dirpaths = batch
         B, L = mixture.shape
-
-        # waveforms -> [B, 3, L]
-        # mixture -> [B, 1, L]
-
-
-
-        # chunk separation
         audio_length = L
         mixture = mixture.to(device)
 
@@ -229,15 +215,10 @@ def main(mode, args):
             overlap_count[:, start:end] = overlap_count[:, start:end] + 1
         
 
-        # mixture_spec_chunked = torch.cat(mixture_spec_chunked_list, dim=0)
-        # chunk_batch_size = 4
         model_fn = model.forward_with_cfg
 
         chunk_p_bar = tqdm(total=len(mixture_spec_chunked_list), desc=f"Chunk Sampling", disable=rank != 0)
         for (start, end), mixture_latents in zip(index_list, mixture_spec_chunked_list):
-            # sampling use same noise for all sources
-            # noise = torch.randn_like(mixture_latents).repeat(1, 3, 1, 1)
-            # sampling use different noise for different sources
             noise = torch.randn(B, 3*C, H, W, device=device)
 
             model_kwargs = dict(mixture_latents=mixture_latents, cfg_scale=args.cfg_scale)
@@ -252,13 +233,6 @@ def main(mode, args):
         pred_audio = torch.divide(pred_audio, overlap_count.unsqueeze(1)).clamp(-1, 1)
         samples = pred_audio
 
-        # # Sample inputs:
-        # z = torch.randn(B, 3*C, H, W, device=device)
-        # model_kwargs = dict(mixture_latents=mixture_latents)
-        # model_fn = model.forward
-        # # Sample images:
-        # samples = transport.sample(model_fn, z, **model_kwargs)
-        # samples = spec2audio(samples)
         waveforms = waveforms.to(device)
         mixture = mixture.to(device)
 
@@ -267,9 +241,6 @@ def main(mode, args):
             case_num, file_num = dirpath.split('/')[-2:]
             eval_save_dir = f"{sample_folder_dir}/{case_num}/{file_num}"
             os.makedirs(eval_save_dir, exist_ok=True)
-            # save the mixture if it is not saved yet
-            # if not ( f"{eval_save_dir}/mixture.wav").exists():
-            #     torchaudio.save(f"{eval_save_dir}/mixture.wav", mixture[j].unsqueeze(0).cpu(), sample_rate=16000)
             
             metrics_dict = {}
             for i, stem in enumerate(dataset.stems):
@@ -320,10 +291,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    # if len(sys.argv) < 2:
-    #     print("Usage: program.py <mode> [options]")
-    #     sys.exit(1)
-    
     mode = "ODE"
     
     assert mode[:2] != "--", "Usage: program.py <mode> [options]"
@@ -346,14 +313,12 @@ if __name__ == "__main__":
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a SiT checkpoint (default: auto-download a pre-trained SiT-XL/2 model).")
-
+    parser.add_argument("--root_dnrv3_dataset_path", type=str, default="")
     parse_transport_args(parser)
     if mode == "ODE":
         parse_ode_args(parser)
-        # Further processing for ODE
     elif mode == "SDE":
         parse_sde_args(parser)
-        # Further processing for SDE
 
     args = parser.parse_args()
     main(mode, args)

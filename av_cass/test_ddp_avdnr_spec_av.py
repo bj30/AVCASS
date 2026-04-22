@@ -10,10 +10,7 @@ For a simple single-GPU/CPU sampling script, see sample.py.
 """
 import torch
 import torch.distributed as dist
-from models_avdnr_zero_conv import SiT_models
-from download import find_model
-from transport import create_transport, Sampler
-from diffusers.models import AutoencoderKL
+from models_avdnr_zero_conv_2vid import SiT_models
 from train_utils import parse_ode_args, parse_sde_args, parse_transport_args
 from tqdm import tqdm
 import os
@@ -28,8 +25,7 @@ import torch.nn as nn
 
 import torchaudio
 from torch.utils.data import DataLoader
-from data.data_fixedAVDnR import MultiSourceDataset
-from stable_audio_tools import AudioAE
+from data.data_AVDnR import MultiSourceDataset
 from spec_utils import audio2spec, spec2audio
 from transport.RFM import ReFlow
 from torchmetrics.functional.audio import signal_distortion_ratio, signal_noise_ratio, scale_invariant_signal_noise_ratio, scale_invariant_signal_distortion_ratio
@@ -78,19 +74,16 @@ def main(mode, args):
     # Load model:
     model_init_kwargs = dict(in_channels=8, out_channels=6, attention_head_dim=args.attention_head_dim, visual_feat_dim=image_feat_dim)
     model = SiT_models[args.model](**model_init_kwargs).to(device)
-    # Auto-download a pre-trained model or load a custom SiT checkpoint from train.py:
     ckpt_path = args.ckpt or f"SiT-XL-2-{args.image_size}x{args.image_size}.pt"
     state_dict = torch.load(ckpt_path, weights_only=False, map_location="cpu")['ema']
     model.load_state_dict(state_dict)
-    model.eval()  # important!
-    # model = torch.compile(model)
+    model.eval()
     
     
     transport = ReFlow(
         infer_steps=args.num_sampling_steps,
     )
 
-    # Create folder to save samples:
     model_string_name = args.model.replace("/", "-")
     ckpt_string_name = os.path.basename(args.ckpt).replace(".pt", "") if args.ckpt else "pretrained"
     if args.folder_name:
@@ -107,7 +100,6 @@ def main(mode, args):
                         file_dir = os.path.join(case_dir, file_name)
                         if not os.path.isdir(file_dir):
                             continue
-                        # check if all sources are saved
                         exists = 0
                         for stem in ["speech", "sfx", "music"]:
                             if os.path.exists(os.path.join(file_dir, f"{stem}.wav")):
@@ -119,7 +111,6 @@ def main(mode, args):
             audio_directory = '/mnt/lynx1/datasets/dnr_v2_16k/tt'
             if os.path.isdir(f"{args.sample_dir}/{folder_name}"):
                 for case_name in os.listdir(f"{args.sample_dir}/{folder_name}"):
-                        # check if all sources are saved
                         exists =0 
                         for stem in ["speech", "sfx", "music"]:
                             if os.path.exists(os.path.join(args.sample_dir, folder_name, case_name, f"{stem}.wav")):
@@ -144,7 +135,6 @@ def main(mode, args):
                         f"{mode}-{args.num_sampling_steps}-{args.sampling_method}-"\
                         f"{args.diffusion_form}-{args.last_step}-{args.last_step_size}"
         experiment_index = len(glob(f"{args.sample_dir}/*"))
-        # broadcast experiment_index to all processes
         experiment_index = torch.tensor(experiment_index).to(device)
         dist.broadcast(experiment_index, 0)
         experiment_index = experiment_index.item()
@@ -175,6 +165,7 @@ def main(mode, args):
         rank=rank,
         world_size=dist.get_world_size(),
         exclude_list=exclude_list,
+        root_dnrv3_dataset_path=args.root_dnrv3_dataset_path,
     )
 
     loader = DataLoader(
@@ -190,21 +181,10 @@ def main(mode, args):
 
     dist.barrier()
 
-    # import ipdb; ipdb.set_trace()
     pbar = tqdm(loader, desc=f"Sampling", disable=rank != 0)
     for idx, batch in enumerate(pbar):
-        # if idx < 30:
-        #     continue
-        # waveforms, mixture, dirpaths = batch
         waveforms, mixture, vid, dirpaths = batch
         B, L = mixture.shape
-
-        # waveforms -> [B, 3, L]
-        # mixture -> [B, 1, L]
-
-
-
-        # chunk separation
         audio_length = L
         mixture = mixture.to(device)
         vid = vid.to(device)
@@ -252,15 +232,10 @@ def main(mode, args):
             vid_feature_chunked_list.append(vid_feature)
     
 
-        # mixture_spec_chunked = torch.cat(mixture_spec_chunked_list, dim=0)
-        # chunk_batch_size = 4
         model_fn = model.forward_with_cfg
 
         chunk_p_bar = tqdm(total=len(mixture_spec_chunked_list), desc=f"Chunk Sampling", disable=rank != 0)
         for (start, end), mixture_latents, vid_feature in zip(index_list, mixture_spec_chunked_list, vid_feature_chunked_list):
-            # sampling use same noise for all sources
-            # noise = torch.randn_like(mixture_latents).repeat(1, 3, 1, 1)
-            # sampling use different noise for different sources
             noise = torch.randn(B, 3*C, H, W, device=device)
             vid_feature = vid_feature.half()
             model_kwargs = dict(mixture_latents=mixture_latents, cfg_scale=args.cfg_scale, vid=vid_feature)
@@ -275,28 +250,16 @@ def main(mode, args):
         pred_audio = torch.divide(pred_audio, overlap_count.unsqueeze(1)).clamp(-1, 1)
         samples = pred_audio
 
-        # # Sample inputs:
-        # z = torch.randn(B, 3*C, H, W, device=device)
-        # model_kwargs = dict(mixture_latents=mixture_latents)
-        # model_fn = model.forward
-        # # Sample images:
-        # samples = transport.sample(model_fn, z, **model_kwargs)
-        # samples = spec2audio(samples)
         waveforms = waveforms.to(device)
         mixture = mixture.to(device)
 
-        # Save samples to disk as individual .wav files
         for j, dirpath in enumerate(dirpaths):
             case_num, file_num = dirpath.split('/')[-2:]
             eval_save_dir = f"{sample_folder_dir}/{case_num}/{file_num}"
             os.makedirs(eval_save_dir, exist_ok=True)
-            # save the mixture if it is not saved yet
-            # if not ( f"{eval_save_dir}/mixture.wav").exists():
-            #     torchaudio.save(f"{eval_save_dir}/mixture.wav", mixture[j].unsqueeze(0).cpu(), sample_rate=16000)
             
             metrics_dict = {}
             for i, stem in enumerate(dataset.stems):
-                # save the pred sources
                 torchaudio.save(f"{eval_save_dir}/{stem}.wav", samples[j][i].unsqueeze(0).cpu(), sample_rate=16000)
 
                 metrics_dict[f"{stem}_sdr"] = signal_distortion_ratio(samples[j][i], waveforms[j][i]).cpu().item()
@@ -307,15 +270,12 @@ def main(mode, args):
                 metrics_dict[f"{stem}_sisdri"] = metrics_dict[f"{stem}_sisdr"] - scale_invariant_signal_distortion_ratio(mixture[j], waveforms[j][i]).cpu().item()
                 metrics_dict[f"{stem}_sisnri"] = metrics_dict[f"{stem}_sisnr"] - scale_invariant_signal_noise_ratio(mixture[j], waveforms[j][i]).cpu().item()
             
-            # save the metrics
             df = pd.DataFrame(metrics_dict, index=[0])
             df.to_csv(f"{eval_save_dir}/metrics.csv", index=False)
 
-    # Make sure all processes have finished saving their samples before attempting to convert to .npz
     dist.barrier()
     dist.destroy_process_group()
 
-    # average results on rank 0
     if rank == 0:
         results = []
 
@@ -335,9 +295,7 @@ def main(mode, args):
         results = np.concatenate(results, axis=0)
         avg_results = np.mean(results, axis=0)
 
-        # get the column names
         column_names = df.columns.to_list()
-        # save the average results
         df_avg_dict = {k: v for k, v in zip(column_names, avg_results)}
         df_avg = pd.DataFrame(df_avg_dict, index=[0])
         df_avg.to_csv(os.path.join(sample_folder_dir, "average_results.csv"), index=False)
@@ -348,10 +306,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    # if len(sys.argv) < 2:
-    #     print("Usage: program.py <mode> [options]")
-    #     sys.exit(1)
-    
     mode = "ODE"
     
     assert mode[:2] != "--", "Usage: program.py <mode> [options]"
@@ -362,7 +316,7 @@ if __name__ == "__main__":
     parser.add_argument("--folder_name", type=str, default="", help="Optional folder name for eval unfinished inference.")
     parser.add_argument("--vae",  type=str, choices=["ema", "mse"], default="ema")
     parser.add_argument("--visual_encoder_type", type=str, choices=["cavp", "talknet"], default="cavp")
-    parser.add_argument("--attention_head_dim", type=int, default=8, choices=[8, 64], help="set 64 to enable flash attention")
+    parser.add_argument("--attention_head_dim", type=int, default=64, choices=[8, 64], help="set 64 to enable flash attention")
     parser.add_argument("--sample-dir", type=str, default="samples")
     parser.add_argument("--per-proc-batch-size", type=int, default=4)
     parser.add_argument("--num-fid-samples", type=int, default=50_000)
@@ -376,14 +330,12 @@ if __name__ == "__main__":
                         help="By default, use TF32 matmuls. This massively accelerates sampling on Ampere GPUs.")
     parser.add_argument("--ckpt", type=str, default=None,
                         help="Optional path to a SiT checkpoint (default: auto-download a pre-trained SiT-XL/2 model).")
-
+    parser.add_argument("--root_dnrv3_dataset_path", type=str, default="")
     parse_transport_args(parser)
     if mode == "ODE":
         parse_ode_args(parser)
-        # Further processing for ODE
     elif mode == "SDE":
         parse_sde_args(parser)
-        # Further processing for SDE
 
     args = parser.parse_args()
     main(mode, args)

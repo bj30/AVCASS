@@ -74,9 +74,7 @@ def create_symlinks(source_dir, target_dir, type_of_dataset):
 
                     step_count[file] += 1
     
-    elif type_of_dataset in ["dnrv2", "dnrv2_test", "dnrv1", "dnrv1_test", "dnrv3", "dnrv3_test", "dnrv2_16k", "dnrv2_16k_test"]:
-        if type_of_dataset=="dnrv1_test":
-            import pdb; pdb.set_trace()
+    elif type_of_dataset in ["dnrv2", "dnrv2_test", "dnrv3", "dnrv3_test", "dnrv2_16k", "dnrv2_16k_test"]:
         for sample_idx in os.listdir(source_dir):
             # skip if we saved some other files in the source directory
             if not os.path.isdir(os.path.join(source_dir, sample_idx)):
@@ -109,7 +107,7 @@ def prepare_symlinks(testing_folders):
             print(f"Directory {target_directory} already exists. Skip creating symlinks.")
             continue
 
-        assert type_of_dataset in ["dnrv3", "dnrv2", "avdnr", "dnrv1", "dnrv2_16k", "dnrv2_16k_test", "dnrv3_test", "dnrv2_test", "avdnr_test", "dnrv1_test"], f"type_of_dataset must be either 'dnrv3', 'dnrv2' or 'avdnr'. Got '{type_of_dataset}'"
+        assert type_of_dataset in ["dnrv3", "dnrv2", "avdnr", "dnrv2_16k", "dnrv2_16k_test", "dnrv3_test", "dnrv2_test", "avdnr_test"], f"type_of_dataset must be either 'dnrv3', 'dnrv2' or 'avdnr'. Got '{type_of_dataset}'"
         create_symlinks(source_directory, target_directory, type_of_dataset)
 
 
@@ -152,28 +150,15 @@ class SimpleDataset(torch.utils.data.Dataset):
     
 
 def main(args):
-    if args.where == "mmai":
-        target_directory_root = "/mnt/bear2/users/syun/msdm_logs/symlinks_for_fad_iccv"
-        # root_avdnr_dataset_path = "/mnt/lynx1/datasets/AVDnR/test"
-        root_avdnr_dataset_path = "/mnt/lynx3/users/syun/AVDnR/test" # fixedAVDnR
-        root_dnrv2_dataset_path = "/mnt/lynx1/datasets/dnr_v2_official/tt"
-        root_dnrv2_16k_dataset_path = "/mnt/lynx1/datasets/dnr_v2_16k/tt"
-        root_dnrv3_dataset_path = "/mnt/lynx2/datasets/AV-DnR/DnRv3/eng/wav_16k/val"
-        root_dnrv1_dataset_path = "/mnt/lynx2/datasets/DnR-compiled/eval"
-    elif args.where == "nax":
-        target_directory_root = "symlinks_for_fad_iccv"
-        root_avdnr_dataset_path = "/public/home/nax/datasets/Audio/AVDnR/AVDnR/test"
+    target_directory_root = args.target_directory_root
+    
+    root_avdnr_dataset_path = args.root_avdnr_dataset_path
+    root_dnrv2_16k_dataset_path = args.root_dnrv2_16k_dataset_path
+    root_dnrv3_dataset_path = args.root_dnrv3_dataset_path
 
-    dnr_v1_test_path = os.path.join(target_directory_root, 'DnR-compiled-eval')
-    dnr_v3_vgg_v2_test_path = os.path.join(target_directory_root, 'dnrv3-vgg-v2-test')
-    dnr_v3_eng_test_path = os.path.join(target_directory_root, 'dnrv3_eng_val')
-
-    # avdnr_test_path = os.path.join(target_directory_root, 'AV-DnR-test')
     avdnr_test_path = os.path.join(target_directory_root, 'AV-DnR-test-cvpr26')
-    dnrv2_test_path = os.path.join(target_directory_root, 'DnRv2-test')
     dnrv3_test_path = os.path.join(target_directory_root, 'DnRv3-test')
     dnrv2_16k_test_path = os.path.join(target_directory_root, 'DnRv2-test-16k')
-    dnrv1_test_path = os.path.join(target_directory_root, 'DnRv1-test')
 
     testing_folders = [
         # example
@@ -190,76 +175,16 @@ def main(args):
             "avdnr_test",
         ],
         [
-            root_dnrv1_dataset_path,
-            dnrv1_test_path,
-            "dnrv1_test"    
-        ],
-        # # DnRv2 test set
-        # [
-        #     "/mnt/lynx1/datasets/dnr_v2_official/tt",
-        #     dnrv2_test_path,
-        #     "dnrv2_test",
-        # ],
-        [
-            "/mnt/lynx1/datasets/dnr_v2_16k/tt",
+            root_dnrv2_16k_dataset_path,
             dnrv2_16k_test_path,
             "dnrv2_16k_test",
         ],
-        # # DnRv3 test set
         [
-            "/mnt/lynx2/datasets/AV-DnR/DnRv3/eng/wav_16k/val",
+            root_dnrv3_dataset_path,
             dnrv3_test_path,
             "dnrv3_test",
         ],
 
-        # for BANDIT model
-        # [
-        #     "",
-        #     os.path.join(target_directory_root, 'BANDIT_AVDnR_s16le'),
-        #     "avdnr",
-        # ],
-        # [
-        #     "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_zk/testing/bandit_avdnr",
-        #     os.path.join(target_directory_root, 'BANDIT_AVDnR_zk_inference'),
-        #     "avdnr",
-        # ],
-
-        # # for hdemucs v3
-        # [
-        #     "/mnt/bear2/users/syun/25CVPR/main/demucs-v3/outputs/fixed_avdnr/epoch11",
-        #     os.path.join(target_directory_root, 'DEMUCSV3_AVDnR'),
-        #     "avdnr",
-        # ],
-
-        # # for hdemucs v4
-        # [
-        #     "/mnt/bear2/users/syun/25CVPR/main/demucs-v4/outputs/fixed_avdnr/epoch11",
-        #     os.path.join(target_directory_root, 'DEMUCSV4_AVDnR'),
-        #     "avdnr",
-        # ],
-
-        # # for Ours model
-        # [
-        #     "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_sy_spec/testing/spec_resume_fixedAVDnR_ep82",
-        #     os.path.join(target_directory_root, 'Ours_audio_only_ep82_AVDnR'),
-        #     "avdnr",
-        # ],
-        # [
-        #     "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_sy_spec/testing/spec_resume_fixedAVDnR_ep112",
-        #     os.path.join(target_directory_root, 'Ours_audio_only_ep112_AVDnR'),
-        #     "avdnr",
-        # ],
-        # [
-        #     "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_zk/testing/spec_resume_fixedAVDnR-ep115",
-        #     os.path.join(target_directory_root, 'Ours_audio_only_ep115_AVDnR_zk_test'),
-        #     "avdnr",
-        # ],
-
-        # [
-        #     "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_zk/testing/spec_resume_fixedAVDnR-ep24-save_flac-small",
-        #     os.path.join(target_directory_root, 'Ours_audio_only_ep24_flac_AVDnR_zk_test'),
-        #     "avdnr",
-        # ],
     ]
 
     if os.path.exists(args.testing_dir_csv):
@@ -288,14 +213,10 @@ def main(args):
             source_path = os.path.join(target_directory, stem)
             if type_of_dataset == "avdnr":
                 gt_path_root = avdnr_test_path
-            elif type_of_dataset == "dnrv2":
-                gt_path_root = dnrv2_test_path
             elif type_of_dataset == "dnrv2_16k":
                 gt_path_root = dnrv2_16k_test_path
             elif type_of_dataset == "dnrv3":
                 gt_path_root = dnrv3_test_path
-            elif type_of_dataset == "dnrv1":
-                gt_path_root = dnrv1_test_path
             else:
                 raise ValueError(f"Unknown type_of_dataset: {type_of_dataset}")
             target_path = os.path.join(gt_path_root, stem)
@@ -326,23 +247,6 @@ def main(args):
                     target_path,
                     limit_num=None # If you only intend to evaluate X (int) pairs of data, set limit_num=X
                 )
-
-            # frechet = FrechetAudioDistance(
-            #     model_name="vggish",
-            #     sample_rate=16000,
-            #     use_pca=False, 
-            #     use_activation=False,
-            #     verbose=False
-            # )
-            # fad_score = frechet.score(
-            #     target_path, 
-            #     source_path, 
-            #     dtype="float32"
-            # )
-
-            # with open(os.path.join(target_directory, "fad_vggish_results.txt"), 'a') as f:
-            #     f.write(f"fad_vggish: {fad_score}\n")
-
 
             # metric calculation for SDR, SNR, SI-SNR, SI-SDR
             source_results_save_path = os.path.join(target_directory, f"{stem}_source_results.json")
@@ -473,23 +377,6 @@ def main(args):
                     num_files += pred_audios.shape[0]
                     pesq_score_total += sum(pesq_score)
 
-                # for source_files_batch in tqdm.tqdm([source_files[i:i+batch_size] for i in range(0, len(source_files), batch_size)], desc="Testing PESQ"):
-                #     source_aud_paths = [os.path.join(source_path, source_file) for source_file in source_files_batch]
-                #     target_aud_paths = [os.path.join(target_path, source_file) for source_file in source_files_batch]
-                #     pred_audios_list = []
-                #     gt_audios_list = []
-                #     for source_aud_path, target_aud_path in zip(source_aud_paths, target_aud_paths):
-                #         pred_audio, sr = sf.read(source_aud_path)
-                #         assert sr == 16000, f"Sample rate of {source_aud_path} is not 16000"
-                #         gt_audio, sr = sf.read(target_aud_path)
-                #         assert sr == 16000, f"Sample rate of {target_aud_path} is not 16000"
-                #         pred_audios_list.append(pred_audio)
-                #         gt_audios_list.append(gt_audio)
-                #     pred_audios = np.stack(pred_audios_list)
-                #     gt_audios = np.stack(gt_audios_list)
-                #     pesq_score = pesq_batch(16000, gt_audios, pred_audios, 'wb', n_processor=workers)
-                #     num_files += len(source_files_batch)
-                #     pesq_score_total += sum(pesq_score)
                 
                 print(f"PESQ: {pesq_score_total / num_files}, num_files: {num_files}")
                 with open(os.path.join(target_directory, "pesq_results.txt"), 'a') as f:
@@ -585,13 +472,6 @@ def main(args):
         else:
             df.to_csv(f"{type_of_dataset}_evaluation_results2.csv")
 
-    # # save all results into three csv files
-    # for type_of_dataset in ["avdnr", "dnrv2", "dnrv3"]:
-    #     df = pd.DataFrame(all_results[type_of_dataset])
-    #     df.to_csv(f"{type_of_dataset}_evaluation_results.csv")
-
-            
-
 
 
 
@@ -599,312 +479,15 @@ def main(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--where", type=str, default="mmai")
     parser.add_argument("--testing_dir_csv", type=str, default="local_testing_dirs.csv")
+    parser.add_argument("--target_directory_root", type=str, default="/path/to/symlinks_for_fad)
+    parser.add_argument("--root_avdnr_dataset_path", type=str, default="/path/to/AVDnR/test")
+    parser.add_argument("--root_dnrv2_16k_dataset_path", type=str, default="/path/to/dnr_v2_16k/tt")
+    parser.add_argument("--root_dnrv3_dataset_path", type=str, default="/path/to/DnRv3/eng/wav_16k/val")
     args = parser.parse_args()
     
-    # assert args.model_name in ["vggish", "pann", "clap", "encodec"], "model_name must be either 'vggish', 'pann', 'clap' or 'encodec'"
-    
-    # if args.model_name == "vggish":
-    #     sample_rate = 16000
-    # elif args.model_name == "pann":
-    #     sample_rate = 16000
-    # elif args.model_name == "clap":
     from threadpoolctl import threadpool_limits
     with threadpool_limits(limits=4):
         main(args)
     
-    
-    
-    # # sacan all json files end with `cnn14.json`
-    # import glob
-    # import json
-    # import numpy as np
-    # import pandas as pd
-    # import matplotlib.pyplot as plt
-    # import seaborn as sns
-    # import os
-    # import re
-    # import shutil
-    # import pathlib
-    # import datetime
-    # from collections import defaultdict
-    # from itertools import product
-    
-    
-    # root_dir = "./"
-    # json_files = glob.glob(os.path.join(root_dir, "*cnn14.json"))
-    
-    # # load all json files and create a table for comparison
-    # data = defaultdict(list)
-    # for json_file in json_files:
-    #     with open(json_file, 'r') as f:
-    #         metrics = json.load(f)
-    #         data['name'].append(json_file)
-            
-    #         if "DnR-compiled" in json_file:
-    #             data['dataset'].append("DnR-compiled")
-    #         elif "dnrv3-vgg-v2" in json_file:
-    #             data['dataset'].append("dnrv3-vgg-v2")
-    #         else:
-    #             data['dataset'].append("unknown")
-            
-    #         if "speech" in json_file:
-    #             data['stem'].append("speech")
-    #         elif "sfx" in json_file:
-    #             data['stem'].append("sfx")
-    #         elif "music" in json_file:
-    #             data['stem'].append("music")
-    #         else:
-    #             data['stem'].append("unknown")
-            
-    #         for key, value in metrics.items():
-    #             data[key].append(value)
-
-    # df = pd.DataFrame(data)
-    # # sort the table by dataset first, then by stem
-    # df = df.sort_values(by=['dataset', 'stem'])
-    
-    # # df = df.set_index('dataset')
-    # # df = df.sort_index()
-    # print(df)
-    
-    # # save the table into csv file
-    # # df.to_csv("evaluation_results.csv")
-
-
-
-
-
-
-
-
-
-# # back up previous testing pathes
-#     source_directory_list = [
-#         # "/home/zhang/workspace/bandit/banditlogs/bandit_dnrours",
-#         # "/mnt/lynx2/datasets/DnR-compiled/eval",
-#         # "/home/zhang/workspace/bandit/banditlogs/bandit_dnrours-dnrv3-vgg-v2",
-#         # "/mnt/lynx2/datasets/AV-DnR/DnRv3-vgg-v2/test",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/RFM_ReFlow_logit_normal_DnR_8s_msdm_dnr_mixture_cond_bs64/newstep_4",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/AV_RFM_ReFlow_logit_normal_DnRv3-vgg-v2_frozen-avdiffuss-enc_resume_ep19+8_epoch62/newstep_4",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/RFM_ReFlow_logit_normal_DnRv3-vgg-v2_last_testset-DnRv3-vgg-v2",
-#         # "/mnt/bear2/users/syun/dnr_outputs/pretrained_ckpt/dnrv1-batch1",
-#         # "/mnt/bear2/users/syun/dnr_outputs/our_ckpt/DnRv3-vgg-v2-test",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/AV_mode_RFM_DnRv3-vgg-v2-SSLAlignment-frozen-feature_embedding/ema_sampler_test/step_4"
-#         # "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_zk/testing/train_post_RFM_denoise_bsrnn_cond/ep_09_step_4_no_scale"
-        
-#         # DnRv3 eng
-#         # "/mnt/lynx2/datasets/AV-DnR/DnRv3/eng/wav_16k/val",
-        
-#         # for our model
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/Post_RFM_denoise_bsrnn_cond/step_5_trainours_testours",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/Post_RFM_denoise_bsrnn_cond/step_5_trainours_testdnrv1",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/Post_RFM_denoise_bsrnn_cond/step_5_trainours_testdnrv3_eng",
-#         "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/RFM_post_denoise_bsrnn_cond_dnrv1/dnrv1_model_denoiser_step_5_trainours_testours",
-        
-#         # for our model, audio-visual facial video
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/AV_SSLAlignment_Post_RFM_denoise_bsrnn_cond/AV_speech_step_5_trainours_testours",
-#         # for our model, audio-visual sfx video
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/AV_SSLAlignment_Post_RFM_denoise_bsrnn_cond/AV_sfx_step_5_trainours_testours",
-        
-#         # for our model, audio-visual AVDiffuSS encoder (facial video)
-#         # (w/o PD)
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/AV_RFM_ReFlow_logit_normal_DnRv3-vgg-v2_frozen-avdiffuss-enc_resume_ep19+8_epoch62/newstep_4",
-#         # (w/ PD)
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/AV_avdiffuss_Post_RFM_denoise_bsrnn_cond/AV_speech_step_5_trainours_testours",
-        
-#         # for bandit model
-#         # "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_zk/testing/bandit_dnrv3-vgg-v2/sec_6",
-#         # "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_zk/testing/bandit_dnrv3-vgg-v2/dnrv3_dataset",
-#         # "/home/zhang/workspace/MSDM-cocktail-fork-separation/.logs/log_zk/testing/bandit_dnrv3-vgg-v2/dnrv1_dataset",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/bandit_dnrv1/train_dnrv1_test_dnrv1",
-
-#         # for MRX model
-#         # "/mnt/bear2/users/syun/dnr_outputs/our_ckpt/dnrv1",
-#         # "/mnt/bear2/users/syun/dnr_outputs/our_ckpt/DnRv3-vgg-v2-test",
-#         # "/mnt/bear2/users/syun/dnr_outputs/our_ckpt/dnrv3-eng/val",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing_interest/MRX-testDnRv1",
-        
-#         # for Demucs-v3
-#         # (trained on DnRv1)
-#         # "/mnt/bear2/users/syun/25CVPR/main/wavs/demucs/dnrv1",
-#         # (trained on AVDnR)
-#         # "/mnt/bear2/users/syun/25CVPR/main/demucs-v3/outputs/dnrv1/epoch11",
-#         # "/mnt/bear2/users/syun/25CVPR/main/demucs-v3/outputs/avdnr/epoch11",
-#         # "/mnt/bear2/users/syun/25CVPR/main/demucs-v3/outputs/dnrv3/epoch11",
-        
-#         # for Demucs-v4
-#         # "/mnt/bear2/users/syun/25CVPR/main/demucs-v4/outputs/dnrv1/epoch11",
-#         # "/mnt/bear2/users/syun/25CVPR/main/demucs-v4/outputs/avdnr/epoch11",
-#         # "/mnt/bear2/users/syun/25CVPR/main/demucs-v4/outputs/dnrv3/epoch11",
-        
-#         # for MSDM
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing_interest/EDM_AVDnR/testDnRv1",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing_interest/EDM_AVDnR/testAVDnR",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_zk/testing/EDM_AVDnR_ep41/testDnRv3eng/newstep_",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing_interest/EDM_DnRv1/testDnRv1",
-        
-#         # for ours sampling step testing
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_2",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_4",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_6",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_8",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_10",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_12",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_14",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_16",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_18",
-#         # "/mnt/bear2/users/syun/msdm_logs/log_sy/testing/_for_plot_AVRFM_shift3/newstep_20",
-        
-#     ]
-#     target_directory_list = [
-#         # os.path.join(target_directory_root, 'bandit_dnrours'),
-#         # os.path.join(target_directory_root, 'DnR-compiled-eval'),
-#         # os.path.join(target_directory_root, 'bandit_dnrours-dnrv3-vgg-v2'),
-#         # os.path.join(target_directory_root, 'dnrv3-vgg-v2-test'),
-#         # os.path.join(target_directory_root, 'ours_dnr_v1'),
-#         # os.path.join(target_directory_root, 'ours_AV_dnrv3-vgg-v2'),
-#         # os.path.join(target_directory_root, 'ours_AO_dnrv3-vgg-v2'),
-#         # os.path.join(target_directory_root, 'MRX_dnr_v1'),
-#         # os.path.join(target_directory_root, 'MRX_dnrv3-vgg-v2'),
-#         # os.path.join(target_directory_root, 'ours_AV_SSLAlignment_dnrv3-vgg-v2'),
-#         # os.path.join(target_directory_root, 'ours_AO_dnrv3-vgg-v2-post_denoise_bsrnn_cond'),
-        
-#         # DnRv3 eng
-#         # os.path.join(target_directory_root, 'dnrv3_eng_val'),
-        
-        
-#         # for our model, audio only
-#         # os.path.join(target_directory_root, 'ours_AO_dnrv3-vgg-v2-post_denoise_bsrnn_cond-2'),
-#         # os.path.join(target_directory_root, 'ours_AO_trainours_testdnrv1-post_denoise_bsrnn_cond'),
-#         # os.path.join(target_directory_root, 'ours_AO_trainours_testdnrv3'),
-#         os.path.join(target_directory_root, 'ours_AO_traindnrv1_testdnrv1'),
-        
-#         # for our model, audio-visual facial video
-#         # os.path.join(target_directory_root, 'ours_AV_SSLAlignment_facial_trainours_testours'),
-#         # for our model, audio-visual sfx video
-#         # os.path.join(target_directory_root, 'ours_AV_SSLAlignment_sfx_trainours_testours'),
-        
-#         # for our model, audio-visual AVDiffuSS encoder (facial video)
-#         # os.path.join(target_directory_root, 'ours_AV_AVDiffuSS_facial_trainours_testours'),
-#         # os.path.join(target_directory_root, 'ours_AV_AVDiffuSS_facial_trainours_testours-post_denoise_bsrnn_cond'),
-        
-        
-#         # for bandit model
-#         # os.path.join(target_directory_root, 'BANDIT_trainours_testours'),
-#         # os.path.join(target_directory_root, 'BANDIT_trainours_testdnrv3'),
-#         # os.path.join(target_directory_root, 'BANDIT_trainours_testdnrv1'),
-#         # os.path.join(target_directory_root, 'BANDIT_traindnrv1_testdnrv1'),
-        
-#         # for MRX model
-#         # os.path.join(target_directory_root, 'MRX_trainours_testdnrv1'),
-#         # os.path.join(target_directory_root, 'MRX_trainours_testours'),
-#         # os.path.join(target_directory_root, 'MRX_trainours_testdnrv3'),
-#         # os.path.join(target_directory_root, 'MRX_traindnrv1_testdnrv1'),
-        
-#         # for Demucs-v3
-#         # os.path.join(target_directory_root, 'demucs_v3_traindnrv1_testdnrv1'),
-#         # os.path.join(target_directory_root, 'demucs_v3_trainours_testdnrv1'),
-#         # os.path.join(target_directory_root, 'demucs_v3_trainours_testours'),
-#         # os.path.join(target_directory_root, 'demucs_v3_trainours_testdnrv3'),
-        
-#         # for Demucs-v4
-#         # os.path.join(target_directory_root, 'demucs_v4_trainours_testdnrv1'),
-#         # os.path.join(target_directory_root, 'demucs_v4_trainours_testours'),
-#         # os.path.join(target_directory_root, 'demucs_v4_trainours_testdnrv3'),
-        
-#         # for MSDM
-#         # os.path.join(target_directory_root, 'MSDM_trainours_testdnrv1'),
-#         # os.path.join(target_directory_root, 'MSDM_trainours_testours'),
-#         # os.path.join(target_directory_root, 'MSDM_trainours_testdnrv3'),
-#         # os.path.join(target_directory_root, 'MSDM_traindnrv1_testdnrv1'),
-        
-#         # for ours sampling step testing
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_2'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_4'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_6'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_8'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_10'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_12'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_14'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_16'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_18'),
-#         # os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_20'),
-        
-#     ]
-#     assert len(source_directory_list) == len(target_directory_list), "The number of source and target directories must be the same."
-#     # prepare_symlinks(source_directory_list, target_directory_list)
-#     # exit()
-#     dnr_v1_test_path = os.path.join(target_directory_root, 'DnR-compiled-eval')
-#     dnr_v3_vgg_v2_test_path = os.path.join(target_directory_root, 'dnrv3-vgg-v2-test')
-#     dnr_v3_eng_test_path = os.path.join(target_directory_root, 'dnrv3_eng_val')
-    
-#     test_pairs = [
-#         # (os.path.join(target_directory_root, 'bandit_dnrours'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'bandit_dnrours-dnrv3-vgg-v2'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'ours_dnr_v1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'ours_AV_dnrv3-vgg-v2'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'ours_AO_dnrv3-vgg-v2'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'MRX_dnr_v1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'MRX_dnrv3-vgg-v2'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'ours_AV_SSLAlignment_dnrv3-vgg-v2'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'ours_AO_dnrv3-vgg-v2-post_denoise_bsrnn_cond'), dnr_v3_vgg_v2_test_path),
-        
-#         # for our model
-#         # (os.path.join(target_directory_root, 'ours_AO_dnrv3-vgg-v2-post_denoise_bsrnn_cond-2'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'ours_AO_trainours_testdnrv1-post_denoise_bsrnn_cond'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'ours_AO_trainours_testdnrv3'), dnr_v3_eng_test_path),
-#         (os.path.join(target_directory_root, 'ours_AO_traindnrv1_testdnrv1'), dnr_v1_test_path),
-        
-        
-#         # for our model, audio-visual facial video
-#         # (os.path.join(target_directory_root, 'ours_AV_SSLAlignment_facial_trainours_testours'), dnr_v3_vgg_v2_test_path),
-#         # for our model, audio-visual sfx video
-#         # (os.path.join(target_directory_root, 'ours_AV_SSLAlignment_sfx_trainours_testours'), dnr_v3_vgg_v2_test_path),
-        
-#         # for our model, audio-visual AVDiffuSS encoder (facial video)
-#         # (os.path.join(target_directory_root, 'ours_AV_AVDiffuSS_facial_trainours_testours'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'ours_AV_AVDiffuSS_facial_trainours_testours-post_denoise_bsrnn_cond'), dnr_v3_vgg_v2_test_path),
-        
-#         # for bandit model
-#         # (os.path.join(target_directory_root, 'BANDIT_trainours_testours'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'BANDIT_trainours_testdnrv1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'BANDIT_trainours_testdnrv3'), dnr_v3_eng_test_path),
-#         # (os.path.join(target_directory_root, 'BANDIT_traindnrv1_testdnrv1'), dnr_v1_test_path),
-        
-#         # for MRX model
-#         # (os.path.join(target_directory_root, 'MRX_trainours_testdnrv1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'MRX_trainours_testours'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'MRX_trainours_testdnrv3'), dnr_v3_eng_test_path),
-#         # (os.path.join(target_directory_root, 'MRX_traindnrv1_testdnrv1'), dnr_v3_eng_test_path),
-        
-#         # for Demucs-v3
-#         # (os.path.join(target_directory_root, 'demucs_v3_traindnrv1_testdnrv1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'demucs_v3_trainours_testdnrv1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'demucs_v3_trainours_testours'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'demucs_v3_trainours_testdnrv3'), dnr_v3_eng_test_path),
-        
-#         # for Demucs-v4
-#         # (os.path.join(target_directory_root, 'demucs_v4_trainours_testdnrv1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'demucs_v4_trainours_testours'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'demucs_v4_trainours_testdnrv3'), dnr_v3_eng_test_path),
-        
-#         # for MSDM
-#         # (os.path.join(target_directory_root, 'MSDM_trainours_testdnrv1'), dnr_v1_test_path),
-#         # (os.path.join(target_directory_root, 'MSDM_trainours_testours'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'MSDM_trainours_testdnrv3'), dnr_v3_eng_test_path),
-#         # (os.path.join(target_directory_root, 'MSDM_traindnrv1_testdnrv1'), dnr_v3_eng_test_path),
-        
-#         # for ours sampling step testing
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_4'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_6'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_8'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_10'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_12'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_14'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_16'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_18'), dnr_v3_vgg_v2_test_path),
-#         # (os.path.join(target_directory_root, 'AVDiffuSS_sampling_step_testing/step_20'), dnr_v3_vgg_v2_test_path),
-#     ]
     

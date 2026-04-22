@@ -10,9 +10,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import math
-# from timm.models.vision_transformer import PatchEmbed, Attention, Mlp
-# from einops import rearrange, repeat
-# from diffusers import DDPMScheduler, UNet2DModel, UNet2DConditionModel
 
 
 from typing import Any, Dict, Optional, Tuple, Union
@@ -1009,36 +1006,12 @@ class UNet2d(nn.Module):
         else:
             assert cfg_scale >= 1.0
             cond_eps = self.forward(x, t, mixture_latents, vid=vid)
-            # if isinstance(vid, Tuple):
-            #     uncond_vid = (torch.zeros_like(vid[0]), torch.zeros_like(vid[1]))
-            # else:
-            #     uncond_vid = torch.zeros_like(vid)
 
-            # uncond_eps = self.forward(x, t, torch.zeros_like(mixture_latents), vid=vid)
             uncond_vid = (torch.zeros_like(vid[0]), torch.zeros_like(vid[1]))
             uncond_eps = self.forward(x, t, mixture_latents, vid=uncond_vid)
             output = uncond_eps + cfg_scale * (cond_eps - uncond_eps)
             return output
 
-    # def forward(
-    #     self,
-    #     x,
-    #     time = None,
-    #     *,
-    #     features = None, # visual conditioning
-    #     channels_list = None,
-    #     embedding = None,
-    #     return_attn = False,
-    # ) :
-    #     # sample: (B, C, H, W)
-    #     # timestep: float or int
-    #     # encoder_hidden_states: (B, L, feature_dim)
-    #     if features is not None:
-    #         output = self.model(sample=x, timestep=time, encoder_hidden_states=features)
-    #     else:
-    #         output = self.model(sample=x, timestep=time)
-    #     x = output['sample']
-    #     return x
 
 
 

@@ -11,7 +11,8 @@ cd "$SCRIPT_DIR"
 : "${CKPT:?Set CKPT to the audio-only checkpoint path.}"
 : "${NUM_GPUS:=1}"
 : "${PER_PROC_BATCH_SIZE:=4}"
-torchrun --nnodes=1 --nproc_per_node="$NUM_GPUS" \
+: "${MASTER_PORT:=29500}"
+torchrun --nnodes=1 --nproc_per_node="$NUM_GPUS" --master_port="$MASTER_PORT" \
   test_ddp_avdnr_spec.py \
   --model UNet2d_S2 \
   --audio_files_dir "$DATASET_ROOT" \

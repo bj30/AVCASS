@@ -20,7 +20,7 @@
     "sfx": {
       "dataset": "vggsound",
       "roots": [
-        "/path/to/VGGSound_PREPROCESSED_ROOT/audio" ### should add video_json directory as well
+        "/path/to/VGGSound_PREPROCESSED_ROOT/audio"
       ],
       "glob": "**/*.wav"
     },

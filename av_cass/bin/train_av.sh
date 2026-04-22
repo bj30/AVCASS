@@ -13,8 +13,8 @@ cd "$SCRIPT_DIR"
 : "${TALKNET_CKPT:?Set TALKNET_CKPT to the TalkNet checkpoint.}"
 : "${VISUAL_ENCODER_TYPE:=both}"
 : "${ATTENTION_HEAD_DIM:=64}"
-: "${NUM_PROCESSES:=1}"
-: "${MAIN_PROCESS_PORT:=0}"
+: "${NUM_PROCESSES:=4}"
+: "${MAIN_PROCESS_PORT:=29500}"
 accelerate launch --multi_gpu --num_processes "$NUM_PROCESSES" --main_process_port "$MAIN_PROCESS_PORT" --mixed_precision fp16 \
   train_avdnr_fp16_spec_RFM_av.py \
   --results-dir "$RESULTS_DIR" \

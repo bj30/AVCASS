@@ -48,6 +48,7 @@ class MultiSourceDataset(Dataset):
             rank=0,
             world_size=1,
             exclude_list=[],
+            root_dnrv3_dataset_path=None,
         ):
         super().__init__()
         self.sr = sr
@@ -70,7 +71,7 @@ class MultiSourceDataset(Dataset):
             self.audio_dir_list = glob(f'{self.audio_files_dir}/*/')
         elif 'DnRv3' in audio_files_dir:
             if eval_mode and load_whole:
-                self.audio_files_dir = "/mnt/lynx2/datasets/AV-DnR/DnRv3/eng/wav_16k/val"
+                self.audio_files_dir = root_dnrv3_dataset_path
                 self.audio_dir_list = glob(f'{self.audio_files_dir}/*/')
             else:
                 raise ValueError("dnrv3 is currently only for testing")
@@ -89,7 +90,7 @@ class MultiSourceDataset(Dataset):
             if os.path.exists(file_list_path):
                 with open(file_list_path, 'r') as f:
                     audio_dirs = f.readlines()
-                self.audio_dir_list = [x.strip().replace('/lynx4/', '/lynx2/') for x in audio_dirs]
+                self.audio_dir_list = [d.strip() for d in audio_dirs if d.strip()]
             else:
                 self.audio_dir_list = glob(f'{self.audio_files_dir}/*/') 
 
@@ -101,8 +102,6 @@ class MultiSourceDataset(Dataset):
         else:
             self.audio_dir_list = self.audio_dir_list * enlarge_dataset # enlarge the dataset
         
-        self.audio_dir_list = [x.replace('/mnt/scratch/datasets/AVDnR', os.path.dirname(self.audio_files_dir)) for x in self.audio_dir_list]
-        self.audio_dir_list = [x.replace('/mnt/lynx1/datasets/AVDnR', os.path.dirname(self.audio_files_dir)) for x in self.audio_dir_list]
 
         if len(exclude_list)>0:
             print(self.audio_dir_list[:3])
@@ -280,7 +279,7 @@ class MultiSourceDataset(Dataset):
     
     def get_vid_cavp(self, audio_dir, start_idx, end_idx=None, info_type='json', visual_encoder_type=None, vid_stem_type=None):
         if visual_encoder_type is None:
-            visual_encoder_type == self.visual_encoder_type
+            visual_encoder_type = self.visual_encoder_type
         
         if vid_stem_type is None:
             vid_stem_type = self.vid_stem_type
@@ -459,7 +458,7 @@ class SeparationDataset(Dataset, ABC):
 class DnRv3Dataset(SeparationDataset):
     def __init__(
         self,
-        dnr_dir = '/mnt/lynx4/datasets/DnRv3/eng/flac/val/',
+        dnr_dir,
         stems = ['speech', 'sfx', 'music', 'mixture'],
         sample_rate = 16000,
         sample_eps_in_sec = 0.1,
@@ -479,21 +478,7 @@ class DnRv3Dataset(SeparationDataset):
         self.stems = stems
         self.vid_stem_type = vid_stem_type
         self.test_list = []
-        # file_list_path = f'{dnr_dir}/file_list_test.txt'
-        # if os.path.exists(file_list_path):
-        #     with open(file_list_path, 'r') as f:
-        #         audio_dirs = f.readlines()
-        #     self.audio_dir_list = [x.strip().replace('/lynx4/', '/lynx2/') for x in audio_dirs]
-        # else:
-        #     upper_dir = os.path.dirname(dnr_dir)
-        #     file_list_path = f'{upper_dir}/file_list_test.txt'
-        #     if os.path.exists(file_list_path):
-        #         with open(file_list_path, 'r') as f:
-        #             audio_dirs = f.readlines()
-        #         self.audio_dir_list = [x.strip().replace('/lynx4/', '/lynx2/') for x in audio_dirs]
-        #     else:
-        #         self.audio_dir_list = glob(f'{dnr_dir}/*/') 
-        
+
         for root, dirs, files in os.walk(dnr_dir):
             if not dirs:
                 self.test_list.append(os.path.join(dnr_dir,root))
@@ -644,14 +629,7 @@ class DnRv3Dataset(SeparationDataset):
             padding = ((0,0),(0,0),(0,0))
             if random_type=='noise':
                 return np.random.randn(video_len, 3, H, H) * 255.
-            elif random_type=='vgg':
-                # get random image from VGG dataset
-                frame = cv2.imread('/mnt/lynx1/datasets/VGGSound_final/frames/fjPQzldJAt4_000051/128.jpg')
-                frame = cv2.resize(frame, (H,H))
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) # [224,224,3]
-                if frame.ndim==3:
-                    frame = np.transpose(frame, (2,0,1)) # [3,224,224]
-                return np.expand_dims(frame, axis=0)
+
         elif self.visual_encoder_type == 'cavp':
             H = 224
             video_shape = (video_len, 3, H, H)
@@ -775,532 +753,6 @@ class DnRv3Dataset(SeparationDataset):
         return np.array(final_frames)
 
 
-class CondensedMovieDataset(SeparationDataset):
-    def __init__(
-        self,
-        stems = ['speech', 'sfx', 'music', 'mixture'],
-        sample_rate = 16000,
-        sample_eps_in_sec = 0.1,
-        samples_case = 0,
-        sample_length = 130816,
-        start_idx = 1600,
-        mixture_name = 'mixture', # mixture for DnRv3, mix for DnRv1
-        visual_encoder_type=None,
-        load_whole = True,
-        random_visual_input = False,
-        vid_stem_type = ['sfx'],
-        file_list_dir = "", 
-        **kwargs,
-    ):
-        super().__init__()
-        self.sr = sample_rate
-        self.sample_eps = round(sample_eps_in_sec * sample_rate)
-        self.stems = stems
-        self.vid_stem_type = vid_stem_type
-        if file_list_dir != "":
-            all_files_id = file_list_dir
-        else:
-            all_files_id = "/mnt/lynx2/datasets/AV-DnR/av2av_file_list.txt"
-        with open(all_files_id, 'r') as f:
-            self.test_list = f.readlines()
-        self.test_list = [x.strip() for x in self.test_list]
-
-        self.test_list = self.test_list
-        
-        if isinstance(sample_length, float):
-            sample_length = int(sample_length * sample_rate)
-        self.sample_length = sample_length
-        self.start_idx = start_idx if not load_whole else 0
-        self.mixture_name = mixture_name
-        self.load_whole = load_whole
-        self.av_mode = True if visual_encoder_type is not None else False
-        self.visual_encoder_type = visual_encoder_type
-        self.random_visual_input = random_visual_input
-
-        print(f"Found {len(self.test_list)} tracks from {all_files_id}")
-
-    def __len__(self):
-        return len(self.test_list)
-
-    @property
-    def sample_rate(self) -> int:
-        return self.sr
-    
-    def get_vid_from_CondensedMovies(self, visual_encoder_type, audio_length, audio_path):
-        if visual_encoder_type in ['cavp', 'SSLAlignment']:
-            load_fps = 4
-            colorscale = 'RGB'
-            H = 224
-            
-            video_len = round(audio_length / self.sr * load_fps) # 32
-            video_shape = (video_len, 3, H, H)
-            
-            
-        elif visual_encoder_type =='talknet':
-            load_fps = 25
-            colorscale = 'gray'
-            H = 112
-            
-            video_len = round(audio_length / self.sr * load_fps) # 32
-            video_shape = (video_len, H, H)
-            
-            
-        vid_fps = 25
-        
-        if colorscale == 'RGB':
-            cv2_colorscale = cv2.COLOR_BGR2RGB
-        elif colorscale == 'gray':
-            cv2_colorscale = cv2.COLOR_BGR2GRAY
-        
-        parent_dir = os.path.dirname(audio_path)
-        file_name = os.path.basename(audio_path).split(".")[0]
-        if self.visual_encoder_type == 'talknet':
-            video_path = os.path.join(parent_dir, f"crop_{file_name}",  "speaker1_faces.mp4")
-            if not os.path.exists(video_path):
-                frames = np.float16(np.zeros(video_shape))
-                return frames
-        else:
-            video_path = os.path.join(parent_dir, f"{file_name}.mp4")
-            if not os.path.exists(video_path):
-                video_path = video_path.replace("_16k", "_25fps")     
-                assert os.path.exists(video_path)               
-        # for previous version
-        # video_path = dirpath.replace(".wav", ".mp4")
-        
-        # Open the video file
-        cap = cv2.VideoCapture(video_path)
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        
-        
-        
-        num_frames_to_load = video_len
-        # if video_path == "/mnt/bear2/users/syun/25CVPR/audio_mixer_demo/orig_demo_vids/flex_tape_25fps_start_65s.mp4":
-        loaded_video_length = min(round(cap.get(cv2.CAP_PROP_FRAME_COUNT)), round(audio_length / self.sr * 25))
-            
-        # if loaded_video_length, round(audio_length / self.sr * 25):
-        #     raise ValueError(loaded_video_length, round(audio_length / self.sr * 25))
-        
-        # Get frame indices evenly spaced across the video
-        frame_indices = [x for x in np.linspace(0, loaded_video_length-1, num_frames_to_load).astype(int)]
-        if fps != 25:
-            raise ValueError(fps, loaded_video_length, frame_indices)
-        # print(fps, loaded_video_length, frame_indices)
-        # Initialize the current frame index
-        current_frame_index = 0
-        # Process the video
-        frames = []
-        while cap.isOpened():
-            ret, frame = cap.read()
-
-            if ret:
-                if current_frame_index in frame_indices:
-                    frame = cv2.cvtColor(frame, cv2_colorscale)
-                    frame = cv2.resize(frame, (H,H))
-                    if frame.ndim==3:
-                        frame = np.transpose(frame, (2,0,1))
-                    
-                    frames.append(frame)
-                    
-                current_frame_index += 1
-            else:
-                # if current_frame_index < loaded_video_length:
-                #     if current_frame_index in frame_indices:
-                #         frame_indices.remove(current_frame_index)
-                #     else:
-                #         break
-                #     frame_indices.append(current_frame_index+1)
-                #     current_frame_index += 1
-                #     print(f"{current_frame_index} not loaded. Using next frame")
-                #     continue
-                break
-        
-        cap.release()
-        cv2.destroyAllWindows()
-        if len(frames)==0:
-            raise ValueError(video_path)
-        frames = np.array(frames)
-        if video_path == "/mnt/bear2/users/syun/25CVPR/audio_mixer_demo/orig_demo_vids/flex_tape_25fps_start_65s.mp4":
-            print(len(frames), num_frames_to_load, int(self.sample_length / self.sr * load_fps), int(self.sample_length / self.sr * load_fps) - num_frames_to_load)
-        if len(frames) < len(frame_indices):
-            pad_length = int(len(frame_indices) - len(frames))
-            if visual_encoder_type =='talknet':
-                print(f"before padding to {len(frame_indices)}",frames.shape)
-                frames = np.pad(frames, ((0, pad_length), (0,0), (0,0)), mode="reflect")
-                print("after paddding",frames.shape)
-            else:
-                print(f"before padding to {len(frame_indices)}",frames.shape)
-                frames = np.pad(frames, ((0, pad_length), (0,0), (0,0), (0,0)), mode="reflect")
-                print("after paddding",frames.shape)
-            
-        
-        if len(frames) < int(self.sample_length / self.sr * load_fps):
-            pad_length = int(self.sample_length / self.sr * load_fps) - len(frames)
-            
-            if visual_encoder_type =='talknet':
-                print("before padding",frames.shape)
-                frames = np.pad(frames, ((0, pad_length), (0,0), (0,0)), mode="reflect")
-                print("after paddding",frames.shape)
-            else:
-                print("before padding",frames.shape)
-                frames = np.pad(frames, ((0, pad_length), (0,0), (0,0), (0,0)), mode="reflect")
-                print("after paddding",frames.shape)
-        return frames
-    
-    def __getitem__(self, idx):
-        dirpath = self.test_list[idx]
-        audio_path = dirpath
-        print(f"audio_path: {audio_path}")
-        
-        with sf.SoundFile(audio_path) as f:
-            mixture = f.read(dtype='float32')
-        
-            # downsample the audio to self.sr and convert to mono
-            if f.samplerate != self.sr:
-                mixture = librosa.resample(mixture, orig_sr=f.samplerate, target_sr=self.sr)
-            if mixture.ndim>1:
-                mixture = librosa.to_mono(mixture)
-            audio_length = len(mixture)
-            # print(audio_length, self.sample_length)
-            # if the audio is shorter than the sample_length, pad it with zeros on two sides
-            if len(mixture) < self.sample_length:
-                pad_length = self.sample_length - len(mixture)
-                mixture = np.pad(mixture, (0, pad_length), mode="reflect")
-            
-        
-        
-        
-        # if mixture have more than 1 channel, select the first channel
-        if mixture.ndim>1:
-            mixture = mixture[:, 0]
-        
-        if not self.av_mode:
-            return 0, mixture, dirpath
-        else:
-            if self.visual_encoder_type == 'both':
-                vid_cavp = self.get_vid_from_CondensedMovies('cavp', audio_length, audio_path)
-                vid_cavp = torch.from_numpy(vid_cavp).half()
-                vid_tkn = self.get_vid_from_CondensedMovies('talknet', audio_length, audio_path)
-                vid_tkn = torch.from_numpy(vid_tkn).half()
-                vid = [vid_cavp, vid_tkn]
-            elif self.visual_encoder_type == 'cavp':
-                vid_cavp = self.get_vid_from_CondensedMovies('cavp', audio_length, audio_path)
-                vid = torch.from_numpy(vid_cavp).half()
-            elif self.visual_encoder_type == 'talknet':
-                vid_tkn = self.get_vid_from_CondensedMovies('talknet', audio_length, audio_path)
-                vid = torch.from_numpy(vid_tkn).half()
-            
-            return 0, mixture, vid, audio_path
-
-
-class CocktailDemoDataset(SeparationDataset):
-    def __init__(
-        self,
-        stems = ['speech', 'sfx', 'music', 'mixture'],
-        sample_rate = 16000,
-        sample_eps_in_sec = 0.1,
-        samples_case = 0,
-        sample_length = 130816,
-        start_idx = 1600,
-        mixture_name = 'mixture', # mixture for DnRv3, mix for DnRv1
-        visual_encoder_type=None,
-        load_whole = True,
-        random_visual_input = False,
-        vid_stem_type = ['sfx'],
-        file_list_dir = "", 
-        **kwargs,
-    ):
-        super().__init__()
-        self.sr = sample_rate
-        self.sample_eps = round(sample_eps_in_sec * sample_rate)
-        self.stems = stems
-        self.vid_stem_type = vid_stem_type
-        
-        all_files_id = "/mnt/bear2/users/syun/25CVPR/audio_mixer_demo/demo_wav.txt"
-        # all_files_id = "mos_smaples.txt"
-        with open(all_files_id, 'r') as f:
-            self.test_list = f.readlines()
-        self.test_list = [x.strip() for x in self.test_list]
-
-        
-        if isinstance(sample_length, float):
-            sample_length = int(sample_length * sample_rate)
-        self.sample_length = sample_length
-        self.start_idx = start_idx if not load_whole else 0
-        self.mixture_name = mixture_name
-        self.load_whole = load_whole
-        self.av_mode = True if visual_encoder_type is not None else False
-        self.visual_encoder_type = visual_encoder_type
-        self.random_visual_input = random_visual_input
-
-        print(f"Found {len(self.test_list)} tracks from {all_files_id}")
-
-    def __len__(self):
-        return len(self.test_list)
-
-    @property
-    def sample_rate(self) -> int:
-        return self.sr
-    
-    def __getitem__(self, idx):
-        dirpath = self.test_list[idx]
-        audio_path = dirpath
-        print(f"audio_path: {audio_path}")
-        
-        with sf.SoundFile(audio_path) as f:
-            mixture = f.read(dtype='float32')
-            
-            # downsample the audio to self.sr and convert to mono
-            mixture = librosa.resample(mixture, orig_sr=f.samplerate, target_sr=self.sr)
-            mixture = librosa.to_mono(mixture)
-            audio_length = len(mixture)
-            original_audio_length = audio_length
-            print(audio_length, self.sample_length)
-            # if the audio is shorter than the sample_length, pad it with zeros on two sides
-            if len(mixture) < self.sample_length:
-                pad_length = self.sample_length - len(mixture)
-                mixture = np.pad(mixture, (0, pad_length))
-            
-        
-        
-        
-        # if mixture have more than 1 channel, select the first channel
-        if mixture.ndim>1:
-            mixture = mixture[:, 0]
-        
-        if not self.av_mode:
-            return 0, mixture, dirpath
-        else:
-            if self.visual_encoder_type in ['cavp', 'SSLAlignment']:
-                load_fps = 4
-                colorscale = 'RGB'
-                H = 224
-                
-                video_len = int(audio_length / self.sr * load_fps) # 32
-                video_shape = (video_len, 3, H, H)
-                
-                
-            elif self.visual_encoder_type =='talknet':
-                load_fps = 25
-                colorscale = 'gray'
-                H = 112
-                
-                video_len = int(audio_length / self.sr * load_fps) # 32
-                video_shape = (video_len, H, H)
-                
-                
-            vid_fps = 25
-            
-            if colorscale == 'RGB':
-                cv2_colorscale = cv2.COLOR_BGR2RGB
-            elif colorscale == 'gray':
-                cv2_colorscale = cv2.COLOR_BGR2GRAY
-            
-            parent_dir = os.path.dirname(audio_path)
-            file_name = os.path.basename(audio_path).split(".")[0]
-            if self.visual_encoder_type == 'talknet':
-                video_path = os.path.join(parent_dir, f"crop_{file_name}",  "speaker1_faces.mp4")
-                if not os.path.exists(video_path):
-                    frames = np.float16(np.zeros(video_shape))
-                    return 0, mixture, frames, audio_path, original_audio_length
-            else:
-                video_path = os.path.join(parent_dir, f"{file_name}.mp4")
-            # for previous version
-            # video_path = dirpath.replace(".wav", ".mp4")
-            
-            # Open the video file
-            cap = cv2.VideoCapture(video_path)
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            
-            num_frames_to_load = round(load_fps * audio_length / self.sr)
-            
-            # Get frame indices evenly spaced across the video
-            frame_indices = np.linspace(0, int(cap.get(cv2.CAP_PROP_FRAME_COUNT)), num_frames_to_load).astype(int)
-            
-            # Initialize the current frame index
-            current_frame_index = 0
-            # Process the video
-            frames = []
-
-            while cap.isOpened():
-                ret, frame = cap.read()
-
-                if ret:
-                    if current_frame_index in frame_indices:
-                        frame = cv2.cvtColor(frame, cv2_colorscale)
-                        frame = cv2.resize(frame, (H,H))
-                        if frame.ndim==3:
-                            frame = np.transpose(frame, (2,0,1))
-                        
-                        frames.append(frame)
-                    
-                    current_frame_index += 1
-                else:
-                    break
-            
-            cap.release()
-            cv2.destroyAllWindows()
-            if len(frames)==0:
-                raise ValueError(video_path)
-            frames = np.array(frames)
-            # import ipdb; ipdb.set_trace()
-            if num_frames_to_load < int(self.sample_length / self.sr * load_fps):
-                pad_length = int(self.sample_length / self.sr * load_fps) - num_frames_to_load
-                if self.visual_encoder_type =='talknet':
-                    print("before padding",frames.shape)
-                    frames = np.pad(frames, ((0, pad_length), (0,0), (0,0)), mode="reflect")
-                    print("after paddding",frames.shape)
-                else:
-                    print("before padding",frames.shape)
-                    frames = np.pad(frames, ((0, pad_length), (0,0), (0,0), (0,0)), mode="reflect")
-                    print("after paddding",frames.shape)
-            print(frames.shape, mixture.shape)
-            return 0, mixture, frames, audio_path, original_audio_length
-
-
-class ToSMovieDataset(SeparationDataset):
-    def __init__(
-        self,
-        stems = ['speech', 'sfx', 'music', 'mixture'],
-        sample_rate = 16000,
-        sample_eps_in_sec = 0.1,
-        samples_case = 0,
-        sample_length = 130816,
-        start_idx = 0,
-        mixture_name = 'audio',
-        visual_encoder_type='both',
-        load_whole = True,
-        random_visual_input = False,
-        vid_stem_type = ['speech', 'sfx'],
-        file_list_dir = "/mnt/bear2/users/syun/25CVPR/AAAI/ToS/processed", 
-        **kwargs,
-    ):
-        super().__init__()
-        self.sr = sample_rate
-        self.sample_eps = round(sample_eps_in_sec * sample_rate)
-        self.stems = stems
-        self.vid_stem_type = vid_stem_type
-
-        self.test_list = glob(f"{file_list_dir}/*/audio.wav")
-        print(file_list_dir)
-        if isinstance(sample_length, float):
-            sample_length = int(sample_length * sample_rate)
-        self.sample_length = sample_length
-        self.start_idx = 0
-        self.mixture_name = mixture_name
-        self.load_whole = True
-        self.av_mode = True if visual_encoder_type is not None else False
-        self.visual_encoder_type = visual_encoder_type
-        self.random_visual_input = False
-
-        print(f"Found {len(self.test_list)} tracks from {file_list_dir}")
-
-    def __len__(self):
-        return len(self.test_list)
-
-    @property
-    def sample_rate(self) -> int:
-        return self.sr
-    
-    def get_vid_from_ToSmovie(self,
-                            visual_encoder_type, 
-                            audio_dir,
-                            audio_len,
-                            scene_vid_path="video.mp4",
-                            face_track_path="face_track.mp4",
-                            vid_fps = 25,
-                            ):
-        if visual_encoder_type in ['cavp', 'SSLAlignment']:
-            load_fps = 4
-            colorscale = 'RGB'
-            cv2_colorscale = cv2.COLOR_BGR2RGB
-            H, W = 224, 224
-            
-            # video_len = int(sample_length / sampling_rate * load_fps) # 32
-            # video_shape = (video_len, 3, H, W)
-            frame_shape = (3, H, W)
-            vid_path = os.path.join(audio_dir, scene_vid_path)
-            assert os.path.exists(vid_path), vid_path
-            
-            
-        elif visual_encoder_type =='talknet':
-            load_fps = 25
-            colorscale = 'gray'
-            cv2_colorscale = cv2.COLOR_BGR2GRAY
-            H = 112
-            frame_shape = (H, H)
-            
-            # video_len = int(sample_length / sampling_rate * load_fps) # 32
-            # video_shape = (video_len, H, H)
-            vid_path = os.path.join(audio_dir, face_track_path)
-            assert os.path.exists(vid_path), vid_path
-            
-        cap = cv2.VideoCapture(vid_path)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        dur_in_secs = round(audio_len / self.sr)
-        num_frames_to_load = load_fps * dur_in_secs
-        frame_indices = np.linspace(0, total_frames-1, num_frames_to_load).astype(int)
-        print(vid_path, total_frames, dur_in_secs, num_frames_to_load)
-        print(frame_indices)
-        
-        frames = []
-        current_frame_index = 0
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if current_frame_index < frame_indices[0]:
-                current_frame_index += 1
-                continue
-            if ret:
-                if current_frame_index in frame_indices:
-                    frame = cv2.cvtColor(frame, cv2_colorscale)
-                    frame = cv2.resize(frame, (H,H))
-                    if frame.ndim==3:
-                        frame = np.transpose(frame, (2,0,1))
-                    assert frame.shape == frame_shape, frame.shape
-                    frames.append(frame)
-                
-                current_frame_index += 1
-            else:
-                break
-        
-            if current_frame_index > frame_indices[-1]:
-                break
-        
-        return np.array(frames)
-    
-    def __getitem__(self, idx):
-        audio_path = self.test_list[idx]
-        audio_dir = os.path.dirname(audio_path)
-        
-        
-        with sf.SoundFile(audio_path) as f:
-            mixture = f.read(dtype='float32')
-        
-            audio_length = len(mixture)
-            original_audio_length = audio_length
-            # if the audio is shorter than the sample_length, pad it with zeros on two sides
-            if len(mixture) < self.sample_length:
-                pad_length = self.sample_length - len(mixture)
-                mixture = np.pad(mixture, (0, pad_length), mode="reflect")
-                audio_length = len(mixture)
-        
-        if not self.av_mode:
-            return 0, mixture, audio_dir
-        else:
-            if self.visual_encoder_type=='both':
-                vid_cavp = self.get_vid_from_ToSmovie("cavp", audio_dir, audio_length)
-                print("vid_cavp shape", vid_cavp.shape)
-                vid_cavp = torch.from_numpy(vid_cavp).half()
-                
-                vid_tkn = self.get_vid_from_ToSmovie("talknet", audio_dir, audio_length)
-                vid_tkn = torch.from_numpy(vid_tkn).half()
-                print("vid_tkn shape", vid_tkn.shape)
-                
-                vid = [vid_cavp, vid_tkn]
-                output = (0, torch.from_numpy(mixture), vid, audio_dir, original_audio_length)
-                return output
-            
-
-
 class DnRV3(DnRv3Dataset):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -1422,10 +874,11 @@ def extract_frames(fidx_range, audio_path, frames_per_second=4, H=224, colorscal
             pil_colorscale = colorscale
         if colorscale == 'gray':
             pil_colorscale = 'L'
-        vgg_json_dir = '/mnt/bear3/datasets/AV-DnR-backup/vggsound_filtered/video_json'
         
         chunk_name = os.path.basename(audio_path).split('_')[-1].replace('.wav','')
-        json_path = os.path.join(vgg_json_dir, '/'.join(audio_path.split('/')[-2:]).replace(f'_{chunk_name}.wav', '.json'))
+        json_path = audio_path.replace('/audio/', '/video_json/').replace(f'_{chunk_name}.wav', '.json')
+        if not os.path.exists(json_path):
+            raise FileNotFoundError(f"json_path not found: {json_path}")
         with open(json_path, 'r') as f:
             data_dict = json.load(f)
         path_list = data_dict[chunk_name]

@@ -1,11 +1,13 @@
 import os
 import json
+import argparse
 import soundfile as sf
 from glob import glob
 
 import numpy as np
 import librosa
 import tqdm
+import torch
 import torchaudio
 import warnings
 
@@ -75,6 +77,7 @@ class MixtureGeneratorDnRv3():
         sampling_rate=16000, 
         partition='test', 
         peak_norm_db=-2.0,
+        source_roots=None,
         # wavfiles=None,
         without_replacement=False,
         rank=0,
@@ -86,23 +89,35 @@ class MixtureGeneratorDnRv3():
         self.rank = rank
         self.background = enable_background_sfx
         print("Initialized generator at Rank: ", rank)
-        
-        # with open('./wavfiles_info.json', 'r') as f:
-        #     wavfiles = json.load(f)
-        
-        # with open('/mnt/lynx4/datasets/AV-DnR/jsons/nonsilent_librispeech_chunks.json', 'r') as f:
-        #     self.speech_dict = json.load(f)
+
         
         wavfiles = {}
-        split_dir = partition
-        wavfiles['music'] = _get_filepaths(f'/mnt/bear3/datasets/AV-DnR-backup/fma_medium_filtered/audio_16k/{split_dir}', return_dict=True)
-        if partition=='train':
-            wavfiles['speech'] = _get_filepaths('/mnt/datasets/lip_reading/lrs3/pretrain', return_dict=True) + _get_filepaths('/mnt/datasets/lip_reading/lrs3/trainval', return_dict=True)
-        else:
-            wavfiles['speech'] = _get_filepaths('/mnt/datasets/lip_reading/lrs3/test', return_dict=True)
-        wavfiles['sfx'] = _get_filepaths(f'/mnt/lynx2/datasets/AV-DnR/vggsound_filtered/audio/{split_dir}', return_dict=True)
+        if source_roots is None:
+            raise ValueError(
+                "source_roots must be provided (e.g. loaded from configs/source_roots.json). "
+                "This script no longer embeds machine-specific absolute paths."
+            )
+        wavfiles['music'] = _load_sources_for_stem(
+            source_roots=source_roots,
+            stem='music',
+            partition=partition,
+        )
+        wavfiles['speech'] = _load_sources_for_stem(
+            source_roots=source_roots,
+            stem='speech',
+            partition=partition,
+        )
+        wavfiles['sfx'] = _load_sources_for_stem(
+            source_roots=source_roots,
+            stem='sfx',
+            partition=partition,
+        )
         if self.background:
-            wavfiles['background'] = _get_filepaths(f'/mnt/bear3/datasets/AV-DnR-backup/FSD50K_filtered/audio/{split_dir}', return_dict=True)
+            wavfiles['background'] = _load_sources_for_stem(
+                source_roots=source_roots,
+                stem='background',
+                partition=partition,
+            )
         self.files = wavfiles
         # wavfiles is a dictionary containing the file paths, audio duration, length, sr, channels, loudness of each audio file in each class
         # e.g. wavfiles['music'] = [{'file':file_path, 'duration':duration, 'length':length, 'sr':sr, 'channels':channels, 'loudness':loudness}, ...]
@@ -275,8 +290,6 @@ class MixtureGeneratorDnRv3():
             audio_clip_norm, gain = audio_utils.lufs_norm(data=audio_clip, sr=self.sr, norm=event_loudness)
             
             assert event_duration == len(audio_clip_norm)
-            if track_length < event_start + event_duration:
-                import ipdb; ipdb.set_trace()
             assert track_length >= event_start + event_duration, f"Track Length: {track_length}, Event Start: {event_start}, Event Duration: {event_duration}, Residual: {track_length - event_start - event_duration}"
             
             clip_info = {
@@ -416,6 +429,7 @@ class MixtureGeneratorDnRv3():
                 return None
             
         
+        os.makedirs('./temp_dnr', exist_ok=True)
         sf.write(f'./temp_dnr/mixture_woffmpeg_{rank}.wav', mixture, self.sr)
         
         # Using FFmpeg to normalize the audio
@@ -460,8 +474,6 @@ class MixtureGeneratorDnRv3():
         for submix_key, submix_clip in sources_dict.items():
             loudness = meter.integrated_loudness(submix_clip)
             if np.isinf(loudness):
-                # loudness = -70.0 # change this to -70
-                raise ValueError(f"Inf loudness for {submix_key}")
                 return None
             loudness_dict[submix_key] = loudness
             mixture += submix_clip
@@ -470,8 +482,7 @@ class MixtureGeneratorDnRv3():
         # to fit the target loudness of the mixture
         mixture_loudness = meter.integrated_loudness(mixture)
         if np.isinf(mixture_loudness):
-            # mixture_loudness = -70.0 # change this to -70
-            raise ValueError(f"Inf loudness for {submix_key}")
+            return None
         
         delta_loudness = mixture_target_loudness - mixture_loudness
         gain = np.power(10.0, delta_loudness/20.0)
@@ -512,8 +523,61 @@ def _get_filepaths_from_csv(dir, csv_path):
     return path_list
 
 
+def _read_source_roots_config(config_path):
+    with open(config_path, "r") as f:
+        config = json.load(f)
+    return {
+        stem: spec.get("roots", [])
+        for stem, spec in config.get("sources", {}).items()
+    }
 
-def main(root_dir="/mnt/bear1/datasets/AV-DnR", saving_dir_name='DnRv3-vgg', split='test', num_samples=20000):
+
+def _resolve_partition_root(root, partition):
+    root = root.replace("{split}", partition)
+    split_dir = os.path.join(root, partition)
+    if os.path.isdir(split_dir):
+        return split_dir
+    return root
+
+
+def _speech_root_matches_partition(root, partition):
+    root_norm = root.replace("\\", "/").lower()
+    if partition == "train":
+        return "/test" not in root_norm
+    return "/test" in root_norm
+
+
+def _load_sources_for_stem(source_roots, stem, partition):
+    roots = source_roots.get(stem, [])
+    if not roots:
+        raise ValueError(
+            f"Missing source roots for stem '{stem}'. "
+            "Please check your source_roots config."
+        )
+
+    output = []
+    for root in roots:
+        resolved_root = _resolve_partition_root(root, partition)
+        if stem == "speech" and not _speech_root_matches_partition(resolved_root, partition):
+            continue
+        output.extend(_get_filepaths(resolved_root, return_dict=True))
+
+    if not output:
+        raise ValueError(
+            f"No wav files found for stem '{stem}' and partition '{partition}'. "
+            "Please verify your source roots."
+        )
+    return output
+
+
+
+def main(
+    root_dir,
+    saving_dir_name='DnRv3-vgg',
+    split='test',
+    num_samples=20000,
+    source_roots_config=None,
+):
     # get the rank and size from torch.distributed
     import torch.distributed as dist
     # initialize the process group
@@ -528,8 +592,14 @@ def main(root_dir="/mnt/bear1/datasets/AV-DnR", saving_dir_name='DnRv3-vgg', spl
     # np.random.seed(rank)
     
     partition = split
-    
-    generator = MixtureGeneratorDnRv3(partition=partition, rank=rank, enable_background_sfx=False)
+    source_roots = _read_source_roots_config(source_roots_config)
+
+    generator = MixtureGeneratorDnRv3(
+        partition=partition,
+        rank=rank,
+        enable_background_sfx=False,
+        source_roots=source_roots,
+    )
     stems=['speech', 'sfx', 'music']
 
     saving_dir = f"{root_dir}/{saving_dir_name}/{split}/parts_{rank}"
@@ -679,28 +749,27 @@ def video_info_generate(root_dir, saving_dir_name, split):
     #     json.dump(video_info, f, indent=4)
 
 if __name__ == "__main__":  
-    split = 'train' # 'train' or 'test'
-    root_dir = "/mnt/lynx3/users/syun"
-    saving_dir_name = 'AVDnR'
-    # 1) remove overlap
-    # 2) remove BGFX
-    # 3) make sure that sfx is present at every frame
-    num_samples = 100 if split=='test' else 1000
+    parser = argparse.ArgumentParser(description="Legacy AVDnR builder without hard-coded source paths.")
+    parser.add_argument("--split", choices=["train", "test"], default="train")
+    parser.add_argument("--root-dir", required=True, help="Output root directory for generated dataset.")
+    parser.add_argument("--saving-dir-name", default="AVDnR")
+    parser.add_argument("--num-samples", type=int, default=None)
+    parser.add_argument(
+        "--source-roots-config",
+        required=True,
+        help="Path to source_roots JSON (e.g. configs/source_roots.json).",
+    )
+    args = parser.parse_args()
+
+    split = args.split
+    root_dir = args.root_dir
+    saving_dir_name = args.saving_dir_name
+    num_samples = args.num_samples if args.num_samples is not None else (100 if split == "test" else 1000)
     # num_samples = 100
-    ##############################################################################
-    # Debugging
-    ##############################################################################
-    # from ipdb import launch_ipdb_on_exception
-    # with launch_ipdb_on_exception():
-    #     main(root_dir=root_dir, saving_dir_name=saving_dir_name, split=split, num_samples=num_samples)
-    # exit()
-    ##############################################################################
 
     # Step 1: generate the audio files
-    # need to add ffmpeg to the path
-    # export PATH=$PATH:/mnt/bear1/users/zhangkang/ffmpeg
     # running the script with torchrun --standalone --master_port=26666 --nproc_per_node=10 build_DnRv3_fixed.py
-    # main(root_dir=root_dir, saving_dir_name=saving_dir_name, split=split, num_samples=num_samples)
+    # main(root_dir=root_dir, saving_dir_name=saving_dir_name, split=split, num_samples=num_samples, source_roots_config=args.source_roots_config)
     # exit()
     
     

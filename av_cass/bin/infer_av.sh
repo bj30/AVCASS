@@ -14,10 +14,11 @@ cd "$SCRIPT_DIR"
 : "${NUM_GPUS:=1}"
 : "${ATTENTION_HEAD_DIM:=64}"
 : "${PER_PROC_BATCH_SIZE:=4}"
+: "${MASTER_PORT:=29500}"
 if [[ "$VISUAL_ENCODER_TYPE" == "talknet" ]]; then
   : "${TALKNET_CKPT:?Set TALKNET_CKPT when VISUAL_ENCODER_TYPE=talknet.}"
 fi
-torchrun --nnodes=1 --nproc_per_node="$NUM_GPUS" \
+torchrun --nnodes=1 --nproc_per_node="$NUM_GPUS" --master_port="$MASTER_PORT" \
   test_ddp_avdnr_spec_av.py \
   --model UNet2d_S2 \
   --audio_files_dir "$DATASET_ROOT" \

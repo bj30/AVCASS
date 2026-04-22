@@ -50,6 +50,7 @@ This release contains two main components:
 
 
   - Download the pretrained model weights from the links below.
+  - You can jump to the [Inference section](### 4. Run inference) directly with these pretrained models.
 
 | Model | Link |
 | ------- | ----|
@@ -61,6 +62,8 @@ This release contains two main components:
 - Visual backbone checkpoints for AV training and AV inference
   - a CAVP checkpoint: at `Diff-Foley/diff_foley_ckpt/cavp_epoch66.ckpt` of [Diff-Foley](https://huggingface.co/SimianLuo/Diff-Foley)
   - a TalkNet checkpoint: at [Google Drive](https://drive.google.com/file/d/1Qu1JC0zjrb_cc38LBOBD0lcol0d4Oy9y/view?usp=sharing)
+
+
 
 
 ## Installation
@@ -105,7 +108,32 @@ python bin/generate_dataset.py \
   --mixture-length 60
 ```
 
-### 3. Run inference
+### 3. Train models
+
+Stage-1 audio-only training:
+
+```bash
+cd av_cass
+DATASET_ROOT=/path/to/AVDnR \
+RESULTS_DIR=/path/to/training_output \
+NUM_PROCESSES=4 \
+bash ./bin/train_ao.sh
+```
+
+Stage-2 audio-visual training (requires a stage-1 checkpoint):
+
+```bash
+cd av_cass
+DATASET_ROOT=/path/to/AVDnR \
+RESULTS_DIR=/path/to/training_output \
+INIT_CKPT=/path/to/ao_cass_checkpoint.pt \
+CAVP_CKPT=/path/to/cavp.ckpt \
+TALKNET_CKPT=/path/to/talknet.ckpt \
+NUM_PROCESSES=4 \
+bash ./bin/train_av.sh
+```
+
+### 4. Run inference
 
 ```bash
 cd av_cass
@@ -128,7 +156,7 @@ NUM_GPUS=2 \
 ./bin/infer_av.sh
 ```
 
-### 4. Run evaluation
+### 5. Run evaluation
 
 ```bash
 cd av_cass
