@@ -24,18 +24,18 @@
 </p>
 
 
-## Abstract
+## 🎬 Abstract
 
 Cinematic Audio Source Separation (CASS) aims to decompose mixed film audio into speech, music, and sound effects, enabling applications like dubbing and remastering. Existing CASS approaches are audio-only, overlooking the inherent audio-visual nature of films, where sounds often align with visual cues. We present the first framework for audio-visual CASS (AV-CASS), leveraging visual context to enhance separation quality. Our method formulates CASS as a conditional generative modeling problem using conditional flow matching, enabling multimodal audio source separation. To address the lack of cinematic datasets with isolated sound tracks, we introduce a training data synthesis pipeline that pairs in-the-wild audio and video streams, such as facial videos for speech and scene videos for effects, and design a dedicated visual encoder for this dual-stream setup. Trained entirely on synthetic data, our model generalizes effectively to real-world cinematic content and achieves strong performance on synthetic, real-world, and audio-only CASS benchmarks.
 
-## Repository Overview
+## 📁 Repository Overview
 
 This release contains two main components:
 
 - `av_cass/`: training, inference, and evaluation code for audio-only and audio-visual CASS.
 - `av_dnr/`: dataset preparation, manifest generation, and AVDnR synthesis utilities.
 
-## Supported Workflows
+## ✅ Supported Workflows
 
 - Stage-1 audio-only training.
 - Stage-2 audio-visual training.
@@ -44,7 +44,7 @@ This release contains two main components:
 - Objective evaluation on AVDnR outputs.
 - Manifest-driven AVDnR generation.
 
-## Pretrained weights
+## 📦 Pretrained weights
 
 - AV-CASS checkpoint
 
@@ -66,15 +66,15 @@ This release contains two main components:
 
 
 
-## Installation
+## 🛠️ Installation
 
 Create a Python environment with PyTorch, torchaudio, diffusers, accelerate, audioldm_eval, and the visual-backbone dependencies.
 
 The minimal package list is provided in `requirements.txt`.
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Build source and split manifests
+### 1. 🧱 Build source and split manifests
 
 See `av_dnr/prepare_sources/README.md` for preparing source datasets (VGGSound & FMA).
 After preparation, set the source directories in `configs/source_roots.json` to your paths.
@@ -95,7 +95,7 @@ python bin/validate_split_manifests.py \
   --split-dir manifests/release_split
 ```
 
-### 2. Generate AVDnR
+### 2. 🎧 Generate AVDnR
 
 ```bash
 cd av_dnr
@@ -108,7 +108,7 @@ python bin/generate_dataset.py \
   --mixture-length 60
 ```
 
-### 3. Train models
+### 3. 🏋️ Train models
 
 Stage-1 audio-only training:
 
@@ -133,7 +133,7 @@ NUM_PROCESSES=4 \
 bash ./bin/train_av.sh
 ```
 
-### 4. Run inference
+### 4. 🔍 Run inference
 
 ```bash
 cd av_cass
@@ -156,7 +156,7 @@ NUM_GPUS=2 \
 ./bin/infer_av.sh
 ```
 
-### 5. Run evaluation
+### 5. 📊 Run evaluation
 
 ```bash
 cd av_cass
@@ -168,7 +168,7 @@ MODEL_NAME=AV-CASS \
 ./bin/evaluate.sh
 ```
 
-## BibTex
+## 📝 BibTex
 ```
 @inproceedings{zhang2026cinematicaudiosourceseparation,
   title={Cinematic Audio Source Separation Using Visual Cues},
