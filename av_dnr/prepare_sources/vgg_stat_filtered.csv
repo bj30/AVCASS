@@ -1,0 +1,185 @@
+ambulance siren,1050,vehicle
+"bird chirping, tweeting",1050,animals
+chainsawing trees,1050,vehicle
+chicken crowing,1050,animals
+driving buses,1050,vehicle
+driving motorcycle,1050,vehicle
+"engine accelerating, revving, vroom",1050,vehicle
+fireworks banging,1050,others
+helicopter,1050,vehicle
+"motorboat, speedboat acceleration",1050,sports
+"pigeon, dove cooing",1050,animals
+police car (siren),1050,vehicle
+"race car, auto racing",1050,vehicle
+"railroad car, train wagon",1050,vehicle
+toilet flushing,1050,home
+"vehicle horn, car horn, honking",1050,vehicle
+frog croaking,1018,animals
+vacuum cleaner cleaning floors,1009,home
+slot machine,1000,others
+"subway, metro, underground",1000,vehicle
+crow cawing,993,animals
+car engine knocking,990,vehicle
+machine gun shooting,986,others
+ocean burbling,983,nature
+civil defense siren,979,others
+missile launch,974,others
+tractor digging,970,vehicle
+airplane flyby,964,vehicle
+lions roaring,964,animals
+scuba diving,963,sports
+fire truck siren,958,vehicle
+police radio chatter,958,tools
+pheasant crowing,937,animals
+arc welding,934,tools
+dog howling,929,animals
+wind noise,922,nature
+"electric shaver, electric razor shaving",908,home
+skidding,906,vehicle
+cap gun shooting,904,others
+people clapping,903,people
+mynah bird singing,884,animals
+horse clip-clop,882,animals
+printer printing,881,others
+cat purring,861,animals
+lathe spinning,859,others
+lawn mowing,858,vehicle
+lighting firecrackers,854,others
+volcano explosion,842,nature
+dog growling,826,animals
+planing timber,816,tools
+gibbon howling,792,animals
+goose honking,788,animals
+sharpen knife,776,tools
+train horning,771,vehicle
+dog barking,767,animals
+"heart sounds, heartbeat",756,people
+owl hooting,753,animals
+typing on typewriter,745,others
+woodpecker pecking tree,745,animals
+cattle mooing,735,animals
+hail,718,nature
+canary calling,717,animals
+cricket chirping,702,animals
+stream burbling,690,nature
+wood thrush calling,681,animals
+roller coaster running,678,sports
+"ice cream truck, ice cream van",676,vehicle
+mouse clicking,660,others
+francolin calling,651,animals
+turkey gobbling,646,animals
+"cattle, bovinae cowbell",644,animals
+dinosaurs bellowing,633,animals
+dog bow-wow,628,animals
+using sewing machines,626,others
+chicken clucking,625,animals
+splashing water,618,others
+hammering nails,613,tools
+train whistling,608,vehicle
+driving snowmobile,603,vehicle
+duck quacking,602,animals
+lions growling,599,animals
+car passing by,595,vehicle
+parrot talking,593,animals
+sailing,592,sports
+cat meowing,588,animals
+horse neighing,587,animals
+people babbling,587,people
+sliding door,587,home
+wind rustling leaves,563,nature
+people slurping,562,people
+typing on computer keyboard,561,others
+ripping paper,560,others
+elk bugling,557,animals
+"bee, wasp, etc. buzzing",551,animals
+eating with cutlery,528,home
+people belly laughing,517,people
+sheep bleating,515,animals
+waterfall burbling,514,nature
+airplane,506,vehicle
+fire crackling,492,nature
+car engine starting,491,vehicle
+coyote howling,490,animals
+reversing beeps,487,vehicle
+chimpanzee pant-hooting,473,animals
+raining,473,nature
+dog whimpering,461,animals
+opening or closing car doors,459,vehicle
+opening or closing drawers,458,home
+black capped chickadee calling,446,animals
+pig oinking,444,animals
+"donkey, ass braying",438,animals
+mosquito buzzing,438,animals
+squishing water,435,others
+mouse pattering,430,animals
+magpie calling,429,animals
+electric grinder grinding,425,tools
+barn swallow calling,420,animals
+underwater bubbling,420,people
+firing muskets,417,others
+dog baying,412,animals
+cheetah chirrup,403,animals
+wind chime,389,music
+cat growling,387,animals
+car engine idling,370,vehicle
+ice cracking,365,others
+otter growling,363,animals
+"alligators, crocodiles hissing",361,animals
+fox barking,361,animals
+tornado roaring,356,nature
+bird squawking,348,animals
+hair dryer drying,343,home
+firing cannon,336,others
+train wheels squealing,333,vehicle
+alarm clock ringing,331,others
+cupboard opening or closing,330,home
+thunder,325,nature
+bull bellowing,320,animals
+cat hissing,320,animals
+penguins braying,318,animals
+running electric fan,318,others
+elephant trumpeting,310,animals
+snake hissing,285,animals
+writing on blackboard with chalk,280,tools
+spraying water,278,others
+sloshing water,276,others
+cutting hair with electric trimmers,268,tools
+forging swords,264,tools
+plastic bottle crushing,264,others
+warbler chirping,264,animals
+chipmunk chirping,261,animals
+bird wings flapping,258,animals
+chopping wood,254,others
+popping popcorn,253,others
+eagle screaming,252,animals
+footsteps on snow,251,people
+hedge trimmer running,251,tools
+blowtorch igniting,250,tools
+sea waves,250,sports
+goat bleating,246,animals
+air conditioning noise,245,others
+mouse squeaking,240,animals
+ferret dooking,239,animals
+cat caterwauling,237,animals
+strike lighter,229,others
+smoke detector beeping,221,others
+cuckoo bird calling,218,animals
+foghorn,217,others
+eletric blender running,214,tools
+chinchilla barking,213,animals
+sea lion barking,211,animals
+opening or closing car electric windows,205,vehicle
+baltimore oriole calling,200,animals
+bathroom ventilation fan running,200,home
+cell phone buzzing,200,others
+chopping food,200,home
+disc scratching,200,music
+door slamming,200,home
+"fly, housefly buzzing",200,animals
+telephone bell ringing,200,others
+whale calling,200,animals
+cow lowing,199,animals
+pumping water,199,others
+snake rattling,199,animals
+zebra braying,199,animals
+air horn,197,vehicle
