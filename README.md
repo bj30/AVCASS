@@ -168,7 +168,6 @@ MODEL_NAME=AV-CASS \
 ./bin/evaluate.sh
 ```
 
-
 ## BibTex
 ```
 @inproceedings{zhang2026cinematicaudiosourceseparation,
