@@ -50,7 +50,7 @@ This release contains two main components:
 
 
   - Download the pretrained model weights from the links below.
-  - You can jump to the [Inference section](### 4. 🔍 Run inference) directly with these pretrained models.
+  - You can jump to the Inference section (4. 🔍 Run inference) directly with these pretrained models.
 
 | Model | Link |
 | ------- | ----|
@@ -60,8 +60,8 @@ This release contains two main components:
   - See `docs/CHECKPOINTS.md` for the expected layout.
 
 - Visual backbone checkpoints for AV training and AV inference
-  - a CAVP checkpoint: at `Diff-Foley/diff_foley_ckpt/cavp_epoch66.ckpt` of [Diff-Foley](https://huggingface.co/SimianLuo/Diff-Foley)
-  - a TalkNet checkpoint: at [Google Drive](https://drive.google.com/file/d/1Qu1JC0zjrb_cc38LBOBD0lcol0d4Oy9y/view?usp=sharing)
+  - CAVP checkpoint: at `Diff-Foley/diff_foley_ckpt/cavp_epoch66.ckpt` of [Diff-Foley](https://huggingface.co/SimianLuo/Diff-Foley)
+  - TalkNet checkpoint: at [Google Drive](https://drive.google.com/file/d/1Qu1JC0zjrb_cc38LBOBD0lcol0d4Oy9y/view?usp=sharing)
 
 
 
@@ -110,7 +110,7 @@ python bin/generate_dataset.py \
 
 ### 3. 🏋️ Train models
 
-Stage-1 audio-only training:
+- Stage-1 audio-only training:
 
 ```bash
 cd av_cass
@@ -120,7 +120,7 @@ NUM_PROCESSES=4 \
 bash ./bin/train_ao.sh
 ```
 
-Stage-2 audio-visual training (requires a stage-1 checkpoint):
+- Stage-2 audio-visual training (requires a stage-1 checkpoint):
 
 ```bash
 cd av_cass
@@ -135,6 +135,8 @@ bash ./bin/train_av.sh
 
 ### 4. 🔍 Run inference
 
+- Audio-only:
+
 ```bash
 cd av_cass
 DATASET_ROOT=/path/to/AVDnR \
@@ -144,7 +146,7 @@ NUM_GPUS=2 \
 ./bin/infer_ao.sh
 ```
 
-Audio-visual:
+- Audio-visual:
 
 ```bash
 cd av_cass
