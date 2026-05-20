@@ -50,7 +50,7 @@ This release contains two main components:
 
 
   - Download the pretrained model weights from the links below.
-  - You can jump to the [Inference section](### 4. Run inference) directly with these pretrained models.
+  - You can jump to the [Inference section](### 4. 🔍 Run inference) directly with these pretrained models.
 
 | Model | Link |
 | ------- | ----|
