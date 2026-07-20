@@ -17,7 +17,6 @@ pytorch-lightning
 torchmetrics
 threadpoolctl
 pesq
-audioldm_eval
 pyloudnorm
 ffmpeg-normalize
 mmcv

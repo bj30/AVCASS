@@ -1,0 +1,45 @@
+[project]
+name = "avcass"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+    "accelerate>=1.14.0",
+    "av>=18.0.0",
+    "diffusers==0.34.0",
+    "einops>=0.8.2",
+    "ffmpeg-normalize>=1.41.1",
+    "librosa>=0.11.0",
+    "mmcv>=2.2.0",
+    "numpy>=2.4.6",
+    "omegaconf>=2.3.1",
+    "opencv-python>=5.0.0.93",
+    "pandas>=3.0.3",
+    "pesq>=0.0.4",
+    "pyloudnorm>=0.2.0",
+    "pytorch-lightning>=2.6.5",
+    "scipy>=1.18.0",
+    "soundfile>=0.14.0",
+    "threadpoolctl>=3.6.0",
+    "torch==2.4.0",
+    "torchaudio==2.4.0",
+    "torchdiffeq>=0.2.5",
+    "torchmetrics>=1.9.0",
+    "torchvision==0.19.0",
+    "tqdm>=4.69.0",
+    "wandb>=0.28.1",
+    "xformers>=0.0.27.post2",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch" }
+torchvision = { index = "pytorch" }
+torchaudio = { index = "pytorch" }
+mmcv = { url = "https://download.openmmlab.com/mmcv/dist/cu121/torch2.4.0/mmcv-2.2.0-cp312-cp312-manylinux1_x86_64.whl" }
+xformers = { index = "pytorch" }
+
+[[tool.uv.index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
