@@ -30,6 +30,10 @@ from visual_backbones import forward_video, init_visual_encoder  # noqa: E402
 
 # 배포판에 체크포인트가 들어있지 않아 직접 받아 AVCASS/ 밑에 둔 파일들
 THE_AVCASS_CHECKPOINT = os.path.join(THE_AVCASS_ROOT, "av_cass_checkpoint.pt")
+# forward는 이미 autocast(fp16)로 도는데 원본 체크포인트는 fp32라 로드 시간/VRAM이 불필요하게
+# 2배였다. fp16으로 캐스팅한 사본을 최초 1회만 만들어두고 이후로는 절반 크기 파일만 읽는다
+# (원본 fp32 파일은 그대로 둔다)
+THE_AVCASS_CHECKPOINT_FP16 = os.path.join(THE_AVCASS_ROOT, "av_cass_checkpoint_fp16.pt")
 THE_CAVP_CHECKPOINT = os.path.join(THE_AVCASS_ROOT, "cavp_epoch66.ckpt")
 
 # 모델이 16kHz 모노로 학습되어 있다 (AVCASS/av_cass/data/data_AVDnR.py의 sr=16000)
@@ -44,7 +48,7 @@ THE_VIDEO_FRAME_SIZE = 224
 # 공개된 체크포인트가 학습될 때 쓰인 값 (av_cass_checkpoint.pt에 저장된 args.attention_head_dim,
 # bin/infer_av.sh의 기본값과도 동일) 및 기본 추론 설정(num-sampling-steps/cfg-scale)
 THE_ATTENTION_HEAD_DIM = 64
-THE_NUM_SAMPLING_STEPS = 250
+THE_NUM_SAMPLING_STEPS = 128
 THE_CFG_SCALE = 0.0
 # 청크를 하나씩 순차 처리하는 대신 이 개수만큼 묶어서 비주얼 인코더/디퓨전 샘플러를
 # 한 번에 호출한다(배치 내 항목은 BatchNorm eval 모드 running stats, 어텐션 등 서로
@@ -95,6 +99,19 @@ def _stub_out_buggy_mmcv_npu_module():
     sys.modules[the_module_name] = the_stub_module
 
 
+def _load_ema_state_dict_fp16() -> dict:
+    if os.path.exists(THE_AVCASS_CHECKPOINT_FP16):
+        return torch.load(THE_AVCASS_CHECKPOINT_FP16, map_location="cpu", weights_only=False)
+
+    the_fp32_state_dict = torch.load(THE_AVCASS_CHECKPOINT, map_location="cpu", weights_only=False)["ema"]
+    the_fp16_state_dict = {
+        the_key: the_value.half() if torch.is_tensor(the_value) and the_value.is_floating_point() else the_value
+        for the_key, the_value in the_fp32_state_dict.items()
+    }
+    torch.save(the_fp16_state_dict, THE_AVCASS_CHECKPOINT_FP16)
+    return the_fp16_state_dict
+
+
 def load_demixing_model(the_device: torch.device) -> AvcassDemixingModel:
     if the_device.type != "cuda":
         # UNet2d가 생성 시점에 xformers의 flash attention을 무조건 활성화하고, 추론 루프도
@@ -117,8 +134,8 @@ def load_demixing_model(the_device: torch.device) -> AvcassDemixingModel:
         out_channels=6,
         attention_head_dim=THE_ATTENTION_HEAD_DIM,
         visual_feat_dim=the_image_feature_dim,
-    ).to(the_device)
-    the_state_dict = torch.load(THE_AVCASS_CHECKPOINT, map_location="cpu", weights_only=False)["ema"]
+    ).to(the_device).half()
+    the_state_dict = _load_ema_state_dict_fp16()
     the_model.load_state_dict(the_state_dict)
     the_model.eval()
 
@@ -352,7 +369,7 @@ def main():
     # 청크를 rank끼리 나눠 처리하므로(separate_three_stems 참고) 각 프로세스가 같은 입력
     # 오디오/비디오 전체를 필요로 한다. 공유 파일시스템 상의 같은 파일을 프로세스마다
     # 다시 읽는 게 rank 0가 읽어서 브로드캐스트하는 것보다 단순하고, 디코딩 비용은
-    # 250-step 디퓨전 샘플링 대비 무시할 수준이다
+    # 디퓨전 샘플링(THE_NUM_SAMPLING_STEPS 스텝) 대비 무시할 수준이다
     the_mixture_array, _ = librosa.load(the_args.audio, sr=THE_DEMIXING_SAMPLE_RATE, mono=True)
     the_stems = separate_three_stems(
         the_demixing_model,
